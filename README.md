@@ -1,4 +1,4 @@
-# ai-video-skills
+# AI Video Skills
 
 A [Claude Code](https://claude.com/claude-code) skill that turns a topic into a publish-ready tech explainer
 reel: researched script, local voice-over, word-level timing, an animated explainer built with
