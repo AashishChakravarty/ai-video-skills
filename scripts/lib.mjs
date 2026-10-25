@@ -271,7 +271,14 @@ export function loadPronounce(r) {
 }
 
 const TOKEN_PARTS = /^([("'“‘]*)(.*?)([)"'”’.,!?;:…।॥]*)$/u;
-const lookup = (map, word) => map[word] ?? map[word.toLowerCase()];
+const entry = (map, word) => map[word] ?? map[word.toLowerCase()];
+/** A word's respelling; a hyphenated word without its own entry is respelled part by part ("twenty-seven"). */
+const lookup = (map, word) => {
+  const hit = entry(map, word);
+  if (hit || !/\p{L}-\p{L}/u.test(word)) return hit;
+  const parts = word.split('-').map((p) => entry(map, p));
+  return parts.every(Boolean) ? parts.join(' ') : undefined;
+};
 
 /** Respells words for the voice only; leading/trailing punctuation is kept around the replacement. */
 export function speakable(text, map) {
@@ -289,11 +296,18 @@ export function speakable(text, map) {
 /** True when the narration is written in a non-Latin script (Hindi in Devanagari, Russian, …). */
 export const nonLatin = (text) => /[\p{L}--\p{Script=Latin}]/v.test(text);
 
+const LATIN_WORD = /^(?=.*\p{Script=Latin})[\p{Script=Latin}\d'’-]+$/u;
+const bareWords = (text) => text.split(/\s+/).map((tok) => tok.match(TOKEN_PARTS)?.[2] ?? '');
+
 /** Latin-script words of a non-Latin narration (tags removed) that no entry respells, lower-cased and unique. */
 export function unrespelled(text, map) {
   if (!nonLatin(text)) return [];
-  const words = text.split(/\s+/).map((tok) => tok.match(TOKEN_PARTS)?.[2] ?? '');
-  return [...new Set(words.filter((w) => /^\p{Script=Latin}[\p{Script=Latin}'’-]*$/u.test(w) && !lookup(map, w)).map((w) => w.toLowerCase()))];
+  return [...new Set(bareWords(text).filter((w) => LATIN_WORD.test(w) && !lookup(map, w)).map((w) => w.toLowerCase()))];
+}
+
+/** Numerals with no respelling (70%, 8.5.12): voices read them unpredictably, so the script spells them out. */
+export function numerals(text, map) {
+  return [...new Set(bareWords(text).filter((w) => /\d/.test(w) && !LATIN_WORD.test(w) && !lookup(map, w)))];
 }
 
 /** The respellings speakable() applies to this text, as [word, respelling] pairs in order of first use. */

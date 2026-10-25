@@ -29,7 +29,8 @@ session picks up where the last one stopped.
 ## What you get per reel
 
 - `research.md` with sourced facts, and `script.md`: hook, scenes, narration, timed on-screen beats
-- `audio-script.md`: the narration ready for ElevenLabs (audio tags kept) or any other platform
+- `audio-script.txt`: the whole narration as the voice will read it (audio tags kept, pronunciation fixed),
+  ready to paste into ElevenLabs or any TTS; `audio-script.md` adds a plain copy for other platforms
 - `audio/vo.wav` from a local voice engine, or imported from ElevenLabs / another platform / your recording,
   with word timings in `words.json`
 - the rendered video with a contact sheet; ask for versions and you get two creative directions plus a
@@ -116,7 +117,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 |---|---|
 | `doctor.mjs`, `config.mjs` | checks the machine; shows/changes settings |
 | `new-reel.mjs`, `logo.mjs` | creates a reel folder; sets the topic logo and a contrast-safe accent (simple-icons) |
-| `script.mjs vo` / `audio` / `time` | narration from script.md; the tagged audio script; `@word` beats → spoken times |
+| `script.mjs vo` / `audio` / `time` | narration from script.md plus the paste-ready audio script; the audio script alone; `@word` beats → spoken times |
 | `pronounce.mjs` | words the voice would read with the wrong accent; respellings saved per reel and for all reels |
 | `tts.mjs` | voice-over per scene via VoiceStudio, Chatterbox or `say` (audio tags translated), or imports a file |
 | `align.py` | forced alignment of the approved script to the audio → `words.json` |

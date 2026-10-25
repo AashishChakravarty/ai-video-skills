@@ -6,14 +6,16 @@ default local engine is `tts.default` in the config.
 
 ## The audio script and the four ways to make the voice
 
-After the script gate, `node script.mjs audio` writes `audio-script.md`: an **ElevenLabs block** (audio tags
-kept, pronunciation fixes applied), a **plain block** (tags removed, pauses as "…") and a per-scene table.
-Show the user the path and the ElevenLabs block, then ask how they want the voice made:
+`node script.mjs vo` (run at the script gate) writes **`audio-script.txt`**: the whole narration as the voice
+will read it, audio tags kept and pronunciation fixes applied, ready to paste into ElevenLabs or any TTS. Next
+to it, `audio-script.md` holds the same text as an **ElevenLabs block**, a **plain block** (tags removed,
+pauses as "…") and a per-scene table. `node script.mjs audio` rewrites just these two files.
+Show the user the path and the text of `audio-script.txt`, then ask how they want the voice made:
 
 | Option | What happens | Best for |
 |---|---|---|
 | 1. Generated locally | `tts.mjs` with VoiceStudio, Chatterbox or macOS say (table below) | free, private, your saved voices |
-| 2. ElevenLabs | user pastes the ElevenLabs block into Eleven v3, downloads the MP3 | richest delivery: every audio tag is acted |
+| 2. ElevenLabs | user pastes `audio-script.txt` into Eleven v3, downloads the MP3 | richest delivery: every audio tag is acted |
 | 3. Another platform | user pastes the plain block; puts the delivery notes in the platform's style field | Sarvam Bulbul (Indian voices and accents), Google Gemini TTS / AI Studio, OpenAI TTS (instructions field), Azure Speech, Murf, … |
 | 4. Own recording | user reads the plain block (phone or mic, quiet room) | your real voice |
 
@@ -88,7 +90,7 @@ Respellings come from three layers, later ones winning:
 
 | Layer | File | Holds |
 |---|---|---|
-| starter | `pronounce/<lang>.json` in the skill | ~130 common tech words for Hindi (data → डाटा, server → सर्वर, cache → कैश) |
+| starter | `pronounce/<lang>.json` in the skill | ~130 common tech words for Hindi (data → डाटा, server → सर्वर, cache → कैश) and English number words (seventy → सेवेंटी, point → पॉइंट) |
 | personal | `~/.config/ai-video-skills/pronounce/<lang>.json` | every fix the user has made; shared by all their reels |
 | reel | `<reel>/pronounce.json` | this reel only |
 
@@ -99,10 +101,13 @@ node pronounce.mjs set nginx="engine x" --reel-only  # this reel only
 node pronounce.mjs list                             # respellings in use and where each comes from
 ```
 
-`script.mjs vo` prints the same warning, so check it right after the script gate: respell every listed word
-before any audio is made (Indian English: "डाटा" not "डेटा", "रिस्पॉन्स", "कैश"). English voice-overs need this
-only for odd terms (`kubectl` → "cube control"). For one wrong word after the voice is made, `pronounce.mjs
-set` it and re-take only the scenes that use it with `--scene`.
+A hyphenated word with no entry of its own is respelled part by part (twenty-seven → ट्वेंटी सेवन). Words with
+digits (PHP2Shell) need an entry; acronyms are respelled letter by letter (php2shell → पी एच पी टू शेल).
+
+`script.mjs vo` prints the same warning, so respell every listed word before showing the script at Gate 1;
+then `audio-script.txt` is ready for any TTS (Indian English: "डाटा" not "डेटा", "रिस्पॉन्स", "कैश"). English
+voice-overs need this only for odd terms (`kubectl` → "cube control"). For one wrong word after the voice is
+made, `pronounce.mjs set` it and re-take only the scenes that use it with `--scene`.
 
 ## Gate 2 — audio approval
 

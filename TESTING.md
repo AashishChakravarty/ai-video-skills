@@ -44,8 +44,9 @@ node $S/script.mjs vo
 With the Hindi script, `node $S/pronounce.mjs` reports `every Latin word is respelled` (the starter list
 covers the example); `node $S/pronounce.mjs list` shows the respellings in use.
 
-**Audio script** — `node $S/script.mjs audio && open audio-script.md`: an ElevenLabs block with the tags
-(`[sighing]`, `[pause]`, `[excited]`), a plain block, and a per-scene table.
+**Audio script** — `vo` also wrote `audio-script.txt`, the whole narration with its tags (`[excited]`,
+`[pause]`, `[sighing]`) ready to paste into a TTS, and `audio-script.md` (`open audio-script.md`): the same
+text as an ElevenLabs block, a plain block, and a per-scene table.
 
 **Voice** — pick one way:
 
@@ -112,8 +113,8 @@ happen, and what to check at each step:
 |---|---|---|
 | 0 Start | run `doctor.mjs`; on a first run ask your handle, channel, language, folder and CTA line once | no repeated questions; config saved (`node $S/config.mjs`) |
 | 1 Topic | ask only for the topic (angle/length/language optional) and create the reel folder | folder under your `reelsRoot`, logo found |
-| 2 Script ✋ | research with sources, then show the hook, scene table (with 3–6 audio tags) and duration; **wait** | facts have URLs in `research.md`; beats use `@word`; tags sparing; length near target |
-| 3 Voice ✋ | write audio-script.md, ask: local engine / ElevenLabs / other platform / record; samples or import; **wait** | the ElevenLabs block pastes cleanly; an imported file lines up; try a re-take of one scene |
+| 2 Script ✋ | research with sources, then show the hook, scene table, duration and the path to `audio-script.txt`; **wait** | facts have URLs in `research.md`; beats use `@word`; short sentences with pause tags, few mood tags; no digits in VO; in a Hindi reel `audio-script.txt` has no Latin words left; length near target |
+| 3 Voice ✋ | ask: local engine / ElevenLabs / other platform / record; samples or import; **wait** | `audio-script.txt` pastes cleanly into ElevenLabs; an imported file lines up; try a re-take of one scene |
 | 4 Words | align and time without asking | scene boundaries it prints look sensible |
 | 5 Build ✋ | write the Living Diagram direction for the topic, build version A, review its contact sheet, show it; **wait** | the video plays; strokes draw on and one hero object carries every hand-off; captions never overlap scene text |
 | 6 Publish | build the 16:9 cut, write captions.md, run publish.mjs | `publish/` has every file; captions within platform limits |
@@ -137,6 +138,7 @@ Also test:
 | VoiceStudio clone voice errors about speech-to-text | handled automatically (tts.mjs trims and transcribes the reference); if it persists, re-save the voice from a 5–15 s clip |
 | English words sound American in a Hindi voice-over ("day-ta") | `node $S/pronounce.mjs` lists the unrespelled ones; `pronounce.mjs set data=डाटा`, then re-take those scenes with `--scene`. For the accent overall: `node $S/config.mjs set "tts.instruct=indian accent"` |
 | Chatterbox `'NoneType' object is not callable` | outdated cached env: `uv cache clean chatterbox-tts` and run again |
+| A number sounds wrong ("8.5.12", "70%") | write it as spoken words in `VO:` (eight point five point twelve, seventy percent); `script.mjs vo` lists any numerals left |
 | `aligner changed the text` | unusual characters in the VO line (emoji, smart symbols) — remove them and re-run `script.mjs vo` |
 | `anchors not found` | the `@word` isn't in that scene's narration (check spelling, or use `@{two words}`) |
 | `check` fails with *missing_local_asset* | a `<video>` points at a clip that wasn't rendered — run `render-clips.mjs` in `build/<v>/remotion` |

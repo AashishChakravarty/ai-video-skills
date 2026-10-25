@@ -38,25 +38,33 @@ palette, fonts, TTS defaults) live in `~/.config/ai-video-skills/config.json` ov
 
 ## Stage 1–2 — research and script → Gate 1
 
-Read `reference/script.md`, then research (with sources) into `research.md` and write `script.md`. When the
-config's `audioTags` is true, add 3–6 ElevenLabs-style audio tags to the `VO:` lines (script.md §Audio tags).
-Present the hook, the scene table (narration with its tags) and the estimated duration, and offer more,
-fewer or no tags. **Wait for the user's approval**; iterate on their edits. Then record `gates.script` and
-run `node $S/script.mjs vo`. In a Hindi (or other non-Latin) voice-over, English words left in Latin script are
-read with an English accent, so `vo` lists every one that has no respelling yet. Respell each the way the
-audience says it (Indian English: data → डाटा, not डेटा) with `node $S/pronounce.mjs set data=डाटा …`; that saves
-it to the reel and to the user's dictionary, so later reels already know it. Then run `node $S/script.mjs audio`.
+Read `reference/script.md`, then research (with sources) into `research.md` and write `script.md` in its
+voice (§Voice and rhythm; the alert arc for news). When the user hands you their own draft, keep its words
+and rhythm and change only the facts, the writing system (Devanagari for Hindi) and the format. When the
+config's `audioTags` is true, pause tags carry the rhythm and other tags stay sparing (script.md §Audio tags).
+
+Run `node $S/script.mjs vo`. It writes `vo.txt` and `audio-script.txt` (the whole narration as the voice will
+read it, ready to paste into any TTS) and lists what the voice would misread. Spell listed numerals out in
+`VO:`. In a Hindi (or other non-Latin) voice-over, English words left in Latin script are read with an English
+accent: respell each the way the audience says it (Indian English: data → डाटा, not डेटा) with
+`node $S/pronounce.mjs set data=डाटा …`; that saves it to the reel and to the user's dictionary, so later reels
+already know it. Run `vo` again until it lists nothing.
+
+Present the hook, the scene table (narration with its tags), the estimated duration and the path to
+`audio-script.txt`, and offer more, fewer or no tags. **Wait for the user's approval**; iterate on their
+edits, re-running `vo` after each. Then record `gates.script`.
 
 ## Stage 3 — audio script and voice-over → Gate 2
 
-Read `reference/audio.md`. Give the user `audio-script.md` (path, plus the ElevenLabs block inline) and ask
-in one question how to create the voice-over, recommending one:
+Read `reference/audio.md`. Give the user `audio-script.txt` (path, plus its text inline; `audio-script.md`
+adds a plain copy for other platforms) and ask in one question how to create the voice-over, recommending one:
 1. **I generate it locally** — with their default voice (doctor's `default voice` row) or another one the
    engines doctor reported (VoiceStudio holds their saved voices; Chatterbox; macOS say for drafts). Make 2–3
    samples of the opening sentence, let them pick, render with `tts.mjs`; if they pick a voice other than the
    default, offer to make it the default (`config.mjs set tts.voicestudioProfile=<id>`).
-2. **ElevenLabs** — they paste the tagged block (Eleven v3) and send back the MP3.
-3. **Another platform** — Sarvam Bulbul, Google Gemini TTS, OpenAI TTS, Azure Speech, … with the plain block.
+2. **ElevenLabs** — they paste `audio-script.txt` (Eleven v3) and send back the MP3.
+3. **Another platform** — Sarvam Bulbul, Google Gemini TTS, OpenAI TTS, Azure Speech, … with the plain block
+   from `audio-script.md`.
 4. **Record it themselves** — reading the plain block.
 
 For 2–4, wait for the file (whole reel or one per scene) and import it with `tts.mjs --engine file`.

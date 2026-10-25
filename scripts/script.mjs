@@ -3,10 +3,12 @@
  *
  *   node script.mjs vo    [--reel dir]  writes vo.txt ([scene-id] blocks, audio tags removed — what subtitles and
  *                                       alignment use) and vo.tagged.txt (tags kept, for TTS) from each scene's VO:
- *                                       line, and prints word counts, an estimated duration and any Latin words a
- *                                       non-Latin narration has not respelled (pronounce.mjs)
- *   node script.mjs audio [--reel dir]  writes audio-script.md: the narration ready to paste into ElevenLabs (tags
- *                                       kept) or any other platform / a recording (plain), with pronunciation fixes
+ *                                       line, then the audio script below; prints word counts, an estimated duration,
+ *                                       numerals to spell out and any Latin words a non-Latin narration has not
+ *                                       respelled (pronounce.mjs)
+ *   node script.mjs audio [--reel dir]  writes audio-script.txt (the whole narration with tags kept and pronunciation
+ *                                       fixes applied, ready to paste into a TTS) and audio-script.md (that text for
+ *                                       ElevenLabs, a plain copy for any other platform / a recording, per scene)
  *   node script.mjs time [--reel dir]   after align.py: resolves every @word / @{two words} beat to its
  *                                       spoken time, writing script.timed.md and anchors.json
  *
@@ -18,7 +20,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import path from 'node:path';
-import { CONFIG, SKILL, appliedFixes, forEngine, loadPronounce, loadReel, readJson, speakable, stripTags, unrespelled, writeJson } from './lib.mjs';
+import { CONFIG, SKILL, appliedFixes, forEngine, loadPronounce, loadReel, numerals, readJson, speakable, stripTags, unrespelled, writeJson } from './lib.mjs';
 
 const WORDS_PER_SECOND = CONFIG.wordsPerSecond;
 
@@ -63,7 +65,10 @@ function writeVo(r) {
   }
   console.log(`vo.txt: ${scenes.length} scenes, ${total} words ≈ ${(total / WORDS_PER_SECOND).toFixed(0)}s at ${WORDS_PER_SECOND} words/s`);
   const pron = loadPronounce(r), gaps = [...new Set(scenes.flatMap((s) => unrespelled(s.vo, pron)))];
+  const digits = [...new Set(scenes.flatMap((s) => numerals(s.vo, pron)))];
+  if (digits.length) console.log(`! ${digits.length} numeral(s) the voice may misread: ${digits.join(', ')}\n  write them as spoken words in VO: (70% → seventy percent, 8.5.12 → eight point five point twelve)`);
   if (gaps.length) console.log(`! ${gaps.length} Latin word(s) with no respelling will be read with an English accent: ${gaps.join(', ')}\n  respell them: node ${path.join(SKILL, 'scripts/pronounce.mjs')} set ${gaps.map((w) => `${w}=…`).join(' ')}`);
+  writeAudioScript(r, scenes);
 }
 
 /** Splits words.json words into scenes by each scene's narration word count. */
@@ -129,9 +134,8 @@ function timeScript(r) {
 }
 
 const { values: opt, positionals } = parseArgs({ allowPositionals: true, options: { reel: { type: 'string' } } });
-/** audio-script.md: the approved narration for ElevenLabs (tags kept) and for any other platform or a recording. */
-function writeAudioScript(r) {
-  const scenes = parseScript(readFileSync(r.file('script.md'), 'utf8'));
+/** audio-script.txt and audio-script.md: the narration for ElevenLabs or any TTS (tags kept), and for other platforms or a recording. */
+function writeAudioScript(r, scenes = parseScript(readFileSync(r.file('script.md'), 'utf8'))) {
   const pron = loadPronounce(r), lang = r.reel.language ?? CONFIG.language;
   const tagged = scenes.map((s) => ({ id: s.id, eleven: speakable(s.voTagged, pron), plain: forEngine(speakable(s.voTagged, pron), 'plain'), words: s.vo.split(/\s+/).length }));
   const seconds = tagged.reduce((n, s) => n + s.words, 0) / WORDS_PER_SECOND;
@@ -146,7 +150,7 @@ function writeAudioScript(r) {
     '',
     '## ElevenLabs (Eleven v3 — keeps the audio tags)',
     '',
-    `Paste as one generation; blank lines separate scenes. Model **Eleven v3**, language **${lang}**, then download the MP3.`,
+    `Paste as one generation (the same text is in audio-script.txt); blank lines separate scenes. Model **Eleven v3**, language **${lang}**, then download the MP3.`,
     '',
     '```text',
     tagged.map((s) => s.eleven).join('\n\n'),
@@ -174,7 +178,8 @@ function writeAudioScript(r) {
     '',
   ].join('\n');
   writeFileSync(r.file('audio-script.md'), md);
-  console.log(`audio-script.md: ${scenes.length} scenes, ≈ ${Math.round(seconds)} s${styles.length ? `, style tags: ${styles.join('; ')}` : ''}`);
+  writeFileSync(r.file('audio-script.txt'), `${tagged.map((s) => s.eleven).join('\n\n')}\n`);
+  console.log(`audio-script.txt + .md: ${scenes.length} scenes, ≈ ${Math.round(seconds)} s${styles.length ? `, style tags: ${styles.join('; ')}` : ''}`);
 }
 
 const r = loadReel(opt.reel);
