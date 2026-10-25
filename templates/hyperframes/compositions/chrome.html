@@ -1,0 +1,207 @@
+<!--
+  chrome: the persistent frame outside the camera, for the whole reel. Header (topic logo with a soft glow
+  that flashes at DIRECTION.header.logoFlashAt, wordmark, handle), the ticker that drops in at
+  DIRECTION.ticker.from (default: the second scene) and scrolls, the progress bar with a tick at every scene
+  start, and the follow CTA: in portrait a pinned "+ FOLLOW @handle" footer pulsing every
+  DIRECTION.cta.pulseEvery seconds that, at DIRECTION.cta.flyAt, flies up into the final title while the
+  DIRECTION.cta.next card drops into its slot; in landscape a FOLLOW pill on the right of the header.
+-->
+<template>
+  <style>
+    @font-face { font-family: "Reel Sans"; font-weight: 800; src: url("assets/fonts/reel-sans.ttf"); }
+    @font-face { font-family: "Reel Mono"; font-weight: 700; src: url("assets/fonts/reel-mono.ttf"); }
+    #root { position: absolute; inset: 0; overflow: hidden; font-family: "Reel Sans", sans-serif; font-weight: 800; }
+    #root .abs { position: absolute; }
+    #root .txt { position: absolute; white-space: pre; line-height: 1; }
+    #root .mono { font-family: "Reel Mono", monospace; font-weight: 700; }
+  </style>
+  <div id="root" data-composition-id="chrome" data-width="{{W}}" data-height="{{H}}">
+    <div id="ch-head-band" class="abs"></div>
+    <div id="ch-foot-band" class="abs"></div>
+    <div id="ch-logo" class="abs">
+      <div id="ch-logoglow" class="abs" data-layout-ignore></div>
+      <svg id="ch-logo-svg" viewBox="0 0 24 24" style="position: absolute; left: 0; top: 0">
+        <defs>
+          <linearGradient id="ch-logo-g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" id="ch-g0" />
+            <stop offset="0.45" id="ch-g1" />
+            <stop offset="1" id="ch-g2" />
+          </linearGradient>
+        </defs>
+        <path id="ch-logo-path" fill="url(#ch-logo-g)" />
+      </svg>
+    </div>
+    <div id="ch-wordmark" class="txt"></div>
+    <div id="ch-handle" class="txt mono"></div>
+    <div id="ch-hair" class="abs"></div>
+
+    <div id="ch-track" class="abs"></div>
+    <div id="ch-ticks"></div>
+    <div id="ch-fill" class="abs"></div>
+    <div id="ch-dot" class="abs"><div id="ch-dotglow" class="abs"></div><div id="ch-dotcore" class="abs"></div></div>
+
+    <div id="ch-cta" class="abs">
+      <div id="ch-glowcta" class="abs" data-layout-ignore></div>
+      <div id="ch-ring" class="abs"></div>
+      <div id="ch-btn" class="abs"></div>
+      <div id="ch-plus-h" class="abs"></div>
+      <div id="ch-plus-v" class="abs"></div>
+    </div>
+    <div id="ch-follow" class="txt" data-layout-allow-overflow></div>
+    <div id="ch-handle2" class="txt mono" data-layout-allow-overflow></div>
+    <div id="ch-next" class="abs"></div>
+
+    <div id="ch-ticker" class="abs" data-layout-allow-overflow data-layout-allow-overlap>
+      <div id="ch-tk-clip" class="abs"><div id="ch-tk-strip" class="txt mono" data-layout-allow-occlusion></div></div>
+      <div id="ch-tk-badge" class="abs"></div>
+      <div id="ch-tk-dot" class="abs"></div>
+      <div id="ch-tk-live" class="txt mono"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const K = window.ReelKit, { REEL, D, L, FPS, F, prog, lerp, ease, clamp, rgba } = K;
+      const C = REEL.palette, W = L.W, TOTAL = REEL.frames;
+      const dir = { ticker: { label: "LIVE", speed: 2.5, ...(D.ticker || {}) }, header: D.header || {}, cta: { pulseEvery: 2.5, ...(D.cta || {}) } };
+      const q = (id) => document.getElementById(id);
+      const set = (id, css) => Object.assign(q(id).style, css);
+      const px = (v) => `${v}px`;
+      const op = (node, a) => (node.style.opacity = String(clamp(a)));
+      const items = REEL.ticker.length ? REEL.ticker : [REEL.logo ? REEL.logo.title : "", REEL.title].filter(Boolean);
+      const STRIP = items.map((s) => s.toUpperCase()).join("  ·  ") + "  ·  ";
+      const TICKER_AT = F(dir.ticker.from ?? (REEL.scenes[1] ? REEL.scenes[1].start : 0)) - 1;
+      const LOGO_FLASH = dir.header.logoFlashAt != null ? F(dir.header.logoFlashAt) : null;
+      const FLY = L.footer && dir.cta.flyAt != null ? F(dir.cta.flyAt) : null;
+      const PULSE = Math.max(1, F(dir.cta.pulseEvery));
+      const hd = L.header, tk = L.ticker, pg = L.progress, ft = L.footer;
+
+      function layout() {
+        set("ch-head-band", { left: 0, top: 0, width: px(W), height: px(hd.band), background: `linear-gradient(${rgba(C.bg, 0.95)}, ${rgba(C.bg, 0)})` });
+        const lg = hd.logo;
+        set("ch-logo", { left: px(lg.x), top: px(lg.y), width: px(lg.size), height: px(lg.size), transformOrigin: `${lg.size / 2}px ${lg.size / 2}px` });
+        set("ch-logoglow", { left: px(-lg.size), top: px(-lg.size), width: px(lg.size * 3), height: px(lg.size * 3), borderRadius: "50%", background: `radial-gradient(closest-side, ${rgba(C.accent, 0.5)}, ${rgba(C.accent, 0.17)} 50%, ${rgba(C.accent, 0)} 100%)` });
+        q("ch-logo-svg").setAttribute("width", lg.size);
+        q("ch-logo-svg").setAttribute("height", lg.size);
+        if (REEL.logo) q("ch-logo-path").setAttribute("d", REEL.logo.path);
+        else q("ch-logo").style.display = "none";
+        q("ch-g0").setAttribute("stop-color", C.text);
+        q("ch-g1").setAttribute("stop-color", C.accent);
+        q("ch-g2").setAttribute("stop-color", C.accent);
+        q("ch-g2").setAttribute("stop-opacity", "0.72");
+        const wm = hd.wordmark;
+        q("ch-wordmark").textContent = (D.header && D.header.wordmark) || (REEL.logo ? REEL.logo.title : REEL.title).toUpperCase();
+        set("ch-wordmark", { left: px(REEL.logo ? wm.x : lg.x), top: px(wm.y), fontSize: px(wm.size), color: C.white, letterSpacing: "2px" });
+        set("ch-hair", { left: px(60), top: px(hd.hair), width: px(W - 120), height: "2px", background: rgba(C.accent, 0.4) });
+
+        set("ch-track", { left: px(pg.x0), top: px(pg.y), width: px(pg.x1 - pg.x0), height: "4px", background: rgba(C.text, 0.14) });
+        set("ch-fill", { left: px(pg.x0), top: px(pg.y), width: px(pg.x1 - pg.x0), height: "4px", background: C.accent, transformOrigin: "0 50%", transform: "scaleX(0)" });
+        set("ch-dot", { left: px(pg.x0 - 22), top: px(pg.y - 20), width: "44px", height: "44px" });
+        set("ch-dotglow", { left: 0, top: 0, width: "44px", height: "44px", borderRadius: "50%", background: `radial-gradient(closest-side, ${rgba(C.accent, 0.5)}, ${rgba(C.accent, 0.18)} 50%, ${rgba(C.accent, 0)} 100%)` });
+        set("ch-dotcore", { left: "16px", top: "16px", width: "12px", height: "12px", borderRadius: "50%", background: C.accent });
+        for (const s of REEL.scenes.slice(1)) {
+          const t = document.createElement("div");
+          t.className = "abs";
+          Object.assign(t.style, { left: px(pg.x0 + (pg.x1 - pg.x0) * (F(s.start) / (TOTAL - 1)) - 1), top: px(pg.y - 7), width: "2px", height: "18px", background: rgba(C.text, 0.5) });
+          q("ch-ticks").appendChild(t);
+        }
+
+        set("ch-ticker", { left: 0, top: px(tk.top), width: px(W), height: px(tk.h), overflow: "hidden", background: rgba(C.bg, 0.9), borderTop: `2px solid ${rgba(C.accent, 0.55)}`, borderBottom: `2px solid ${rgba(C.accent, 0.55)}`, transform: `translateY(${-(tk.top + tk.h)}px)` });
+        set("ch-tk-badge", { left: 0, top: 0, width: px(tk.badgeW), height: px(tk.h), background: C.accent });
+        set("ch-tk-dot", { left: px(tk.h * 0.29), top: px(tk.h * 0.38), width: px(tk.h * 0.24), height: px(tk.h * 0.24), borderRadius: "50%", background: C.bg });
+        q("ch-tk-live").textContent = dir.ticker.label;
+        set("ch-tk-live", { left: px(tk.h * 0.7), top: px((tk.h - tk.size) / 2), fontSize: px(tk.size), letterSpacing: "3px", color: C.bg });
+        set("ch-tk-clip", { left: px(tk.badgeW), top: 0, width: px(W - tk.badgeW), height: px(tk.h), overflow: "hidden" });
+        set("ch-tk-strip", { left: "24px", top: px((tk.h - tk.size) / 2), fontSize: px(tk.size), letterSpacing: "3px", color: rgba(C.text, 0.92) });
+
+        if (ft) {
+          q("ch-handle").textContent = REEL.handle;
+          set("ch-handle", { right: px(hd.handle.right), top: px(hd.handle.y), fontSize: px(hd.handle.size), color: rgba(C.text, 0.85) });
+          set("ch-foot-band", { left: 0, top: px(ft.bandTop), width: px(W), height: px(L.H - ft.bandTop), background: `linear-gradient(${rgba(C.bg, 0)}, ${rgba(C.bg, 0.8)} 30%, ${rgba(C.bg, 0.95)})` });
+          const b = ft.cta;
+          set("ch-cta", { left: px(b.x), top: px(b.y), width: px(b.w), height: px(b.h), transformOrigin: `${b.w / 2}px ${b.h / 2}px` });
+          set("ch-glowcta", { left: px(-b.h * 0.875), top: px(-b.h * 2.1), width: px(b.w + b.h * 1.75), height: px(b.h * 5.2), borderRadius: "50%", background: `radial-gradient(closest-side, ${rgba(C.accent, 0.35)}, ${rgba(C.accent, 0.12)} 50%, ${rgba(C.accent, 0)} 100%)` });
+          set("ch-ring", { left: 0, top: 0, width: px(b.w), height: px(b.h), border: `3px solid ${C.accent}`, borderRadius: px(b.h / 2) });
+          set("ch-btn", { left: 0, top: 0, width: px(b.w), height: px(b.h), borderRadius: px(b.h / 2), background: C.accent });
+          set("ch-plus-h", { left: "28px", top: px(b.h / 2 - 4), width: "28px", height: "8px", background: C.white });
+          set("ch-plus-v", { left: "38px", top: px(b.h / 2 - 14), width: "8px", height: "28px", background: C.white });
+          q("ch-follow").textContent = REEL.cta.follow;
+          set("ch-follow", { left: 0, top: 0, width: px(W), textAlign: "center", color: C.white });
+          q("ch-handle2").textContent = REEL.handle;
+          set("ch-handle2", { left: 0, top: 0, width: px(W), textAlign: "center", color: C.text });
+          const n = ft.next;
+          set("ch-next", { left: px(n.x), top: px(n.y), width: px(n.w), height: px(n.h), borderRadius: "40px", background: rgba(C.bg, 0.95), border: `4px solid ${C.accent}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: px(n.size), lineHeight: 1, whiteSpace: "pre", color: C.text, opacity: 0, transformOrigin: `${n.w / 2}px ${n.h / 2}px` });
+          if (dir.cta.next) q("ch-next").innerHTML = `<span style="color:${C.accent}">NEXT: </span><span>${dir.cta.next}</span>`;
+        } else {
+          q("ch-foot-band").style.display = q("ch-next").style.display = q("ch-handle").style.display = "none";
+          const c = hd.cta, meas = document.createElement("canvas").getContext("2d");
+          meas.font = `800 ${c.size}px "Reel Sans"`;
+          const fw = meas.measureText(REEL.cta.follow).width;
+          meas.font = `700 ${c.size}px "Reel Mono"`;
+          const hw = meas.measureText(REEL.handle).width, w = Math.ceil(72 + fw + 28 + hw + 36);
+          set("ch-cta", { left: px(W - c.right - w), top: px(c.y), width: px(w), height: px(c.h), transformOrigin: `${w / 2}px ${c.h / 2}px` });
+          set("ch-glowcta", { display: "none" });
+          set("ch-ring", { left: 0, top: 0, width: px(w), height: px(c.h), border: `3px solid ${C.accent}`, borderRadius: px(c.h / 2) });
+          set("ch-btn", { left: 0, top: 0, width: px(w), height: px(c.h), borderRadius: px(c.h / 2), background: C.accent });
+          set("ch-plus-h", { left: "24px", top: px(c.h / 2 - 3), width: "24px", height: "6px", background: C.white });
+          set("ch-plus-v", { left: "33px", top: px(c.h / 2 - 12), width: "6px", height: "24px", background: C.white });
+          q("ch-follow").textContent = REEL.cta.follow;
+          set("ch-follow", { left: px(W - c.right - w + 64), top: px(c.y + (c.h - c.size) / 2 + 2), fontSize: px(c.size), color: C.white });
+          q("ch-handle2").textContent = REEL.handle;
+          set("ch-handle2", { left: px(W - c.right - w + 64 + fw + 28), top: px(c.y + (c.h - c.size) / 2 + 2), fontSize: px(c.size), color: C.white });
+        }
+      }
+
+      let stripW = 1;
+      function render(t) {
+        const f = Math.round(t * FPS), p = f / (TOTAL - 1);
+        q("ch-fill").style.transform = `scaleX(${p.toFixed(5)})`;
+        q("ch-dot").style.transform = `translateX(${((pg.x1 - pg.x0) * p).toFixed(2)}px)`;
+
+        const flash = LOGO_FLASH != null && f >= LOGO_FLASH ? 1 - prog(f, LOGO_FLASH, 14) : 0;
+        q("ch-logo").style.transform = `scale(${(1 + 0.18 * flash).toFixed(4)})`;
+        op(q("ch-logoglow"), (0.22 + 0.06 * Math.sin(f * 0.1) + 0.6 * flash) / 0.5);
+        op(q("ch-hair"), 1 - prog(f, TICKER_AT, 12));
+
+        const drop = f >= TICKER_AT ? 1 - prog(f, TICKER_AT, 12, ease.expoOut) : 1;
+        q("ch-ticker").style.transform = `translateY(${(-(tk.top + tk.h) * drop).toFixed(2)}px)`;
+        q("ch-tk-strip").style.transform = `translateX(${(-((Math.max(0, f - TICKER_AT) * dir.ticker.speed) % stripW)).toFixed(2)}px)`;
+
+        const fly = FLY != null ? prog(f, FLY, 10, ease.expoOut) : 0, k = (f % PULSE) / PULSE;
+        const bump = fly > 0 ? 1 : 1 + 0.06 * Math.sin(Math.PI * clamp(k / 0.16));
+        const cta = q("ch-cta"), ring = q("ch-ring"), bw = parseFloat(cta.style.width), bh = parseFloat(cta.style.height);
+        cta.style.transform = `scale(${bump.toFixed(4)})`;
+        op(cta, 1 - fly * 1.6);
+        const grow = k * (ft ? 60 : 36);
+        op(ring, fly > 0 || k >= 0.5 ? 0 : 1 - k / 0.5);
+        Object.assign(ring.style, { left: px(-grow), top: px(-grow), width: px(bw + grow * 2), height: px(bh + grow * 2), borderRadius: px(bh / 2 + grow) });
+
+        if (!ft) return;
+        const cx = W / 2, fin = ft.final, followX = ft.cta.x + 187, b = ft.cta;
+        const fs = lerp(ft.size, fin.followSize, fly), fx = lerp(followX, cx, fly), fy = lerp(ft.textY, fin.followY, fly);
+        const follow = q("ch-follow"), handle2 = q("ch-handle2"), next = q("ch-next");
+        follow.style.fontSize = px(fs.toFixed(2));
+        follow.style.top = px((fy - 0.52 * fs).toFixed(2));
+        follow.style.transformOrigin = `${(cx + (b.x + b.w / 2) - fx).toFixed(2)}px ${(0.52 * fs + ft.textY - fy).toFixed(2)}px`;
+        follow.style.transform = `translateX(${(fx - cx).toFixed(2)}px) scale(${bump.toFixed(4)})`;
+        const hs = lerp(ft.size, fin.handleSize, fly), hx = lerp(ft.handleX, cx, fly), hy = lerp(ft.textY, fin.handleY, fly);
+        handle2.style.fontSize = px(hs.toFixed(2));
+        handle2.style.top = px((hy - 0.52 * hs).toFixed(2));
+        handle2.style.transform = `translateX(${(hx - cx).toFixed(2)}px)`;
+        if (FLY != null && dir.cta.next && f >= FLY + 2) {
+          next.style.transform = `scale(${(0.875 * lerp(0.5, 1, prog(f, FLY + 2, 8, ease.backOut))).toFixed(4)})`;
+          op(next, prog(f, FLY + 2, 3.2));
+        } else op(next, 0);
+      }
+
+      K.fonts(() => {
+        layout();
+        const meas = document.createElement("canvas").getContext("2d");
+        meas.font = `700 ${tk.size}px "Reel Mono"`;
+        meas.letterSpacing = "3px";
+        stripW = meas.measureText(STRIP).width;
+        q("ch-tk-strip").textContent = STRIP.repeat(Math.ceil((2 * (W - tk.badgeW)) / stripW) + 1);
+        K.drive("chrome", K.DUR, render);
+      });
+    })();
+  </script>
+</template>

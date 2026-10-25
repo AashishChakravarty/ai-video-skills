@@ -1,0 +1,98 @@
+<!--
+  captions: karaoke subtitles from the aligned words (REEL.words, the script's exact spelling). A card breaks
+  at a pause over 0.25s, after 4 words, or before it would wrap past the layout's max width; a lone word joins
+  a neighbour that still fits; a card holds until the next unless the pause runs past 0.6s. A dark pill with an
+  accent highlight that slides under the spoken word while that word turns white. index.html hides this layer
+  when the render variable `captions` is false (the no-subtitle copy).
+-->
+<template>
+  <style>
+    @font-face { font-family: "Reel Sans"; font-weight: 800; src: url("assets/fonts/reel-sans.ttf"); }
+    #root { position: absolute; inset: 0; overflow: hidden; font-family: "Reel Sans", sans-serif; font-weight: 800; }
+    #root .cap { position: absolute; left: 0; width: {{W}}px; text-align: center; opacity: 0; visibility: hidden; }
+    #root .pill { position: relative; display: inline-flex; align-items: center; padding: 0 36px; border-radius: 26px; }
+    #root .hl { position: absolute; left: 0; width: 100%; border-radius: 18px; clip-path: inset(0 100% 0 0 round 18px); }
+    #root .w { position: relative; display: inline-block; line-height: 1; white-space: pre; }
+  </style>
+  <div id="root" data-composition-id="captions" data-width="{{W}}" data-height="{{H}}">
+    <div id="cp-host"></div>
+  </div>
+  <script>
+    (function () {
+      const K = window.ReelKit, { REEL, L, FPS, rgba } = K;
+      const C = REEL.palette, cfg = L.captions, DUR = K.DUR;
+      const snap = (s) => Math.round(s * FPS) / FPS;
+      const WORDS = REEL.words.map(([word, start, end]) => ({ word, start, end }));
+      const DIM = rgba(C.text, 0.72);
+      const host = document.getElementById("cp-host");
+      const tl = gsap.timeline({ paused: true });
+
+      function build() {
+        const meas = document.createElement("canvas").getContext("2d");
+        meas.font = `800 ${cfg.size}px "Reel Sans"`;
+        const fits = (card) => card.length <= 4 && meas.measureText(card.map((w) => w.word).join(" ")).width <= cfg.maxW;
+        const cards = [];
+        for (const w of WORDS) {
+          const card = cards.at(-1);
+          if (card && w.start - card.at(-1).end <= 0.25 && fits([...card, w])) card.push(w);
+          else cards.push([w]);
+        }
+        for (let i = 0; i < cards.length; i++) {
+          if (cards[i].length > 1) continue;
+          if (i > 0 && fits([...cards[i - 1], ...cards[i]])) cards[i - 1].push(...cards.splice(i--, 1)[0]);
+          else if (i + 1 < cards.length && fits([...cards[i], ...cards[i + 1]])) cards[i + 1].unshift(...cards.splice(i--, 1)[0]);
+        }
+        const space = meas.measureText(" ").width, hlH = Math.round(cfg.h * 0.62);
+
+        cards.forEach((card, ci) => {
+          const start = snap(card[0].start);
+          if (start >= DUR) return;
+          const next = cards[ci + 1], last = card.at(-1).end;
+          const end = Math.min(DUR, next && next[0].start - last <= 0.6 ? snap(next[0].start) : snap(last + 0.4));
+
+          const cap = document.createElement("div");
+          cap.className = "cap";
+          cap.id = `cp-${ci}`;
+          Object.assign(cap.style, { top: `${cfg.y}px`, height: `${cfg.h}px` });
+          const pill = document.createElement("div");
+          pill.className = "pill";
+          Object.assign(pill.style, { height: `${cfg.h}px`, background: rgba(C.bg, 0.86) });
+          const hl = document.createElement("div");
+          hl.className = "hl";
+          Object.assign(hl.style, { top: `${(cfg.h - hlH) / 2}px`, height: `${hlH}px`, background: C.accent });
+          pill.appendChild(hl);
+          const spans = card.map((w, wi) => {
+            const s = document.createElement("span");
+            s.className = "w";
+            s.textContent = w.word;
+            Object.assign(s.style, { fontSize: `${cfg.size}px`, color: DIM, marginLeft: wi ? `${space}px` : "0" });
+            pill.appendChild(s);
+            return s;
+          });
+          cap.appendChild(pill);
+          host.appendChild(cap);
+
+          const pw = pill.offsetWidth;
+          tl.set(cap, { visibility: "visible" }, start);
+          tl.fromTo(cap, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 8 / FPS, ease: "expo.out", immediateRender: false }, start);
+          card.forEach((w, wi) => {
+            const s = spans[wi], t = Math.max(start, snap(w.start)), pad = 14;
+            const l = Math.max(0, s.offsetLeft - pad), r = Math.max(0, pw - (s.offsetLeft + s.offsetWidth + pad));
+            tl.to(hl, { clipPath: `inset(0px ${r}px 0px ${l}px round 18px)`, duration: wi ? 0.12 : 0.001, ease: "power3.out" }, t);
+            tl.set(spans, { color: DIM }, t);
+            tl.set(s, { color: C.white }, t);
+          });
+          if (end < DUR) {
+            tl.to(cap, { opacity: 0, duration: 0.12, ease: "power2.in" }, end - 0.12);
+            tl.set(cap, { opacity: 0, visibility: "hidden" }, end);
+          }
+        });
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["captions"] = tl;
+      }
+
+      K.fonts(build);
+    })();
+  </script>
+</template>

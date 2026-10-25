@@ -1,0 +1,38 @@
+<!--
+  scene-id: <what this scene shows and which object it hands to the next scene> (script scene [scene-id]).
+  Copy to compositions/<id>.html, replace every "scene-id", and add its host to index.html at @scenes with
+  data-start = START / fps and data-duration = (END - START) / fps.
+-->
+<template>
+  <style>
+    @font-face { font-family: "Reel Sans"; font-weight: 800; src: url("assets/fonts/reel-sans.ttf"); }
+    @font-face { font-family: "Reel Mono"; font-weight: 700; src: url("assets/fonts/reel-mono.ttf"); }
+    #root { position: absolute; inset: 0; overflow: hidden; font-family: "Reel Sans", sans-serif; font-weight: 800; }
+    #scene-id-cam { position: absolute; inset: 0; }
+    #root .ln { position: absolute; left: 0; right: 0; text-align: center; white-space: pre; line-height: 1; opacity: 0; }
+  </style>
+  <div id="root" data-composition-id="scene-id" data-width="{{W}}" data-height="{{H}}">
+    <div id="scene-id-cam" data-layout-allow-overflow>
+      <div id="scene-id-title" class="ln" style="top: 700px; font-size: 140px">TITLE</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const K = window.ReelKit, { REEL, F, prog, lerp, ease } = K, C = REEL.palette;
+      const sc = K.scene("scene-id"), START = F(sc.start), END = F(sc.end) + 10;
+      const BEAT = F(K.anchor("scene-id", "word"));
+      const cam = document.getElementById("scene-id-cam"), title = document.getElementById("scene-id-title");
+      title.style.color = C.white;
+
+      function render(t) {
+        const f = START + Math.round(t * K.FPS);
+        K.applyCam(cam, f / K.FPS);
+        const a = prog(f, BEAT, 8, ease.expoOut), out = prog(f, END - 10, 10);
+        title.style.opacity = String(a * (1 - out));
+        title.style.transform = `scale(${lerp(1.35, 1, a).toFixed(4)})`;
+      }
+
+      K.fonts(() => K.drive("scene-id", (END - START) / K.FPS, render));
+    })();
+  </script>
+</template>

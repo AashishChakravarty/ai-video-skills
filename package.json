@@ -1,0 +1,10 @@
+{
+  "name": "ai-video-skills",
+  "private": true,
+  "type": "module",
+  "description": "Node tools for the ai-video-skills skill: scaffolding, TTS orchestration, anchors, mixing, review sheets and publish packs.",
+  "dependencies": {
+    "playwright": "1.64.1",
+    "simple-icons": "^15.0.0"
+  }
+}

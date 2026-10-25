@@ -1,0 +1,214 @@
+<!--
+  bg: the living backdrop for the whole reel on one canvas — base colour, two drifting glows, ~1500 twinkling
+  dots, vignette and grain — riding the shared camera at 40% depth. The dots react to DIRECTION.field.events:
+    swarm     {from, to, x, y, w, h, share?, respawn?}  dots stream into a rect, then respawn
+    breathe   {from, to}                                 brightness waves roll up the field
+    split     {from, to}                                 every dot splits into twins, merging back at `to`
+    shockwave {at, x, y, speed?, frames?}                a ring pushes dots outward and flashes them
+    ring      {at, x, y, rx, ry, share?, move?}          dots orbit an ellipse (logo lockups); move {at, frames, to:{x,y,scale}}
+    streams   {from, to, x, y, rx, ry, count?}           streaks converge onto an ellipse (cold opens)
+    pulse     {at, frames?}                              the whole field flashes on a beat
+  Times are seconds, positions canvas pixels.
+-->
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    #bg-canvas { position: absolute; left: 0; top: 0; width: {{W}}px; height: {{H}}px; }
+  </style>
+  <div id="root" data-composition-id="bg" data-width="{{W}}" data-height="{{H}}">
+    <canvas id="bg-canvas" class="clip" data-layout-allow-overflow data-start="0" data-duration="{{DUR}}" width="{{W}}" height="{{H}}"></canvas>
+  </div>
+  <script>
+    (function () {
+      const K = window.ReelKit, { REEL, L, FPS, TAU, F, prog, lerp, wrap, ease, rgba, rng } = K;
+      const W = L.W, H = L.H, C = REEL.palette, field = K.D.field || {};
+      const events = (field.events || []).map((e) => ({ ...e }));
+      const of = (type) => events.filter((e) => e.type === type);
+      const canvas = document.getElementById("bg-canvas");
+      const ctx = canvas.getContext("2d");
+
+      const grain = (() => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 256;
+        const g = c.getContext("2d"), img = g.createImageData(256, 256), r = rng(7);
+        for (let i = 0; i < img.data.length; i += 4) {
+          img.data[i] = img.data[i + 1] = img.data[i + 2] = r() < 0.5 ? 0 : 255;
+          img.data[i + 3] = r() * 14;
+        }
+        g.putImageData(img, 0, 0);
+        return ctx.createPattern(c, "repeat");
+      })();
+
+      function glow(x, y, r, hex, a) {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, rgba(hex, a));
+        g.addColorStop(0.5, rgba(hex, a * 0.35));
+        g.addColorStop(1, rgba(hex, 0));
+        ctx.fillStyle = g;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+
+      /** Fills discs in a few paths: pts is flat [x, y, r, alpha, …], bucketed into 5 alpha levels. */
+      function dots(pts, color) {
+        const levels = [[], [], [], [], []];
+        for (let i = 0; i < pts.length; i += 4) {
+          if (pts[i + 2] > 0 && pts[i + 3] > 0.02) levels[Math.min(4, Math.floor(pts[i + 3] * 5))].push(i);
+        }
+        ctx.fillStyle = color;
+        levels.forEach((idx, lv) => {
+          if (!idx.length) return;
+          ctx.globalAlpha = (lv + 1) / 5;
+          ctx.beginPath();
+          for (const i of idx) {
+            ctx.moveTo(pts[i] + pts[i + 2], pts[i + 1]);
+            ctx.arc(pts[i], pts[i + 1], pts[i + 2], 0, TAU);
+          }
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+      }
+
+      const COLORS = [C.text, C.accent, C.success, C.white];
+      const COUNT = Math.round(1500 * (field.density ?? 1)), DRIFT = field.drift ?? 1;
+      const DOTS = (() => {
+        const r = rng(1500);
+        return Array.from({ length: COUNT }, () => {
+          const kind = r();
+          return {
+            x: r() * W, y: r() * H, vx: (r() - 0.5) * 14 * DRIFT, vy: (-5 - r() * 12) * DRIFT,
+            wob: 4 + r() * 12, wf: 0.1 + r() * 0.25, ph: r() * TAU, tw: 0.25 + r() * 0.6,
+            size: kind < 0.05 ? 3.6 : 1.5 + r() * 1.5, col: kind < 0.05 ? 3 : kind < 0.3 ? 1 : 0, a: 0.3 + r() * 0.45,
+            u: r(), v: r(), w: r(), ang: r() * TAU,
+          };
+        });
+      })();
+
+      function ringCentre(e, f) {
+        if (!e.move) return { x: e.x, y: e.y, s: 1 };
+        const p = prog(f, F(e.move.at), e.move.frames ?? 10, ease.expoOut);
+        return { x: lerp(e.x, e.move.to.x, p), y: lerp(e.y, e.move.to.y, p), s: lerp(1, e.move.to.scale ?? 1, p) };
+      }
+
+      function drawField(f) {
+        const sec = f / FPS, byColor = COLORS.map(() => []), streaks = [];
+        const swarms = of("swarm"), breathes = of("breathe"), splits = of("split"), waves = of("shockwave"), rings = of("ring"), pulses = of("pulse");
+        let flash = 0;
+        for (const p of pulses) flash = Math.max(flash, 1 - prog(f, F(p.at), p.frames ?? 20));
+        for (const d of DOTS) {
+          let x = wrap(d.x + d.vx * sec + Math.sin(sec * d.wf * TAU + d.ph) * d.wob, W + 40) - 20;
+          let y = wrap(d.y + d.vy * sec + Math.cos(sec * d.wf * 0.7 * TAU + d.ph) * d.wob, H + 40) - 20;
+          let a = d.a * (0.62 + 0.38 * Math.sin(sec * d.tw * TAU + d.ph * 3)), r = d.size, col = d.col, hidden = false;
+          if (breathes.some((b) => sec >= b.from && sec < b.to)) a *= 0.8 + 0.3 * Math.sin((sec * TAU) / 2.4 - y * 0.004);
+          if (flash > 0) a = Math.min(1, a + 0.5 * flash);
+          for (const e of swarms) {
+            if (d.u >= (e.share ?? 0.6)) continue;
+            const f0 = F(e.from), f1 = F(e.to), ts = f0 + (f1 - f0) * Math.sqrt(d.v);
+            if (f < ts) continue;
+            const p = prog(f, ts, 12 + d.w * 10, ease.inQuad);
+            if (p < 1) {
+              const tx = e.x + (d.w - 0.5) * e.w, ty = e.y + (d.v - 0.5) * e.h, tail = Math.max(0, p - 0.18);
+              streaks.push(lerp(x, tx, tail), lerp(y, ty, tail), lerp(x, tx, p), lerp(y, ty, p));
+              x = lerp(x, tx, p);
+              y = lerp(y, ty, p);
+              a = Math.max(a, 0.55 + 0.45 * p);
+              r *= 1.2;
+              if (col === 0) col = 1;
+            } else {
+              const rs = F(e.respawn ?? e.to + 2.8) + d.w * F(6);
+              if (f < rs) hidden = true;
+              else a *= prog(f, rs, 20);
+            }
+          }
+          if (hidden) continue;
+          for (const e of waves) {
+            const at = F(e.at), frames = e.frames ?? 50;
+            if (f < at || f >= at + frames) continue;
+            const dx = x - e.x, dy = y - e.y, dist = Math.hypot(dx, dy) || 1;
+            const k = 1 - Math.abs(dist - (f - at) * (e.speed ?? 48)) / 150;
+            if (k > 0) {
+              x += (dx / dist) * 30 * k;
+              y += (dy / dist) * 30 * k;
+              a = Math.min(1, a + 0.7 * k);
+              r *= 1 + 0.8 * k;
+              if (k > 0.5) col = 3;
+            }
+          }
+          for (const e of rings) {
+            if (d.v >= (e.share ?? 0.3)) continue;
+            const p = prog(f, F(e.at) + d.w * 14, 26, ease.inOutCubic);
+            if (p <= 0) continue;
+            const c = ringCentre(e, f), th = d.ang + sec * 0.15, rr = 1 + (d.u - 0.5) * 0.22 + 0.03 * Math.sin(sec * 1.7 + d.ph);
+            x = lerp(x, c.x + Math.cos(th) * e.rx * c.s * rr, p);
+            y = lerp(y, c.y + Math.sin(th) * e.ry * c.s * rr, p);
+            a = lerp(a, 0.5 + 0.4 * d.w, p);
+            if (d.w < 0.5) col = 1;
+          }
+          byColor[col].push(x, y, r, a);
+          for (const e of splits) {
+            const s0 = F(e.from) + d.u * 26, merge = F(e.to);
+            if (f < s0 || f >= merge + 24) continue;
+            const q = prog(f, s0, 12, ease.expoOut);
+            byColor[col].push(x + Math.cos(d.ang) * 18 * q, y + Math.sin(d.ang) * 18 * q, r, a * (1 - prog(f, merge, 24)));
+          }
+        }
+        if (streaks.length) {
+          ctx.strokeStyle = rgba(C.accent, 0.5);
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < streaks.length; i += 4) {
+            ctx.moveTo(streaks[i], streaks[i + 1]);
+            ctx.lineTo(streaks[i + 2], streaks[i + 3]);
+          }
+          ctx.stroke();
+        }
+        byColor.forEach((pts, c) => dots(pts, COLORS[c]));
+      }
+
+      function drawStreams(f) {
+        for (const e of of("streams")) {
+          const f0 = F(e.from), f1 = F(e.to);
+          if (f < f0 || f >= f1 + 12) continue;
+          const alpha = prog(f, f0, 6) * (1 - prog(f, f1, 12));
+          ctx.lineCap = "round";
+          for (let i = 0; i < (e.count ?? 140); i++) {
+            const th = K.hash(i, 61) * TAU, period = 18 + K.hash(i, 63) * 14, q = ((f + K.hash(i, 64) * period) / period) % 1;
+            const c = Math.cos(th), s = Math.sin(th), edge = 1 / Math.hypot(c / e.rx, s / e.ry), far = edge + 450 + K.hash(i, 62) * 520;
+            const r1 = edge + (far - edge) * (1 - q) ** 1.5, r0 = edge + (far - edge) * (1 - Math.max(0, q - 0.14)) ** 1.5;
+            ctx.globalAlpha = alpha * Math.min(1, q * 4 * (1 - q) * 1.6);
+            ctx.strokeStyle = i % 3 ? C.accent : C.white;
+            ctx.lineWidth = i % 3 ? 3 : 2;
+            ctx.beginPath();
+            ctx.moveTo(e.x + c * r0, e.y + s * r0);
+            ctx.lineTo(e.x + c * r1, e.y + s * r1);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      function render(t) {
+        const f = Math.round(t * FPS), sec = f / FPS, cam = K.camAt(sec);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = C.bg;
+        ctx.fillRect(0, 0, W, H);
+        const s = 1 + (cam.s - 1) * 0.4, [ox, oy] = L.camOrigin;
+        ctx.setTransform(s, 0, 0, s, ox * (1 - s) + cam.x * 0.5, oy * (1 - s) + cam.y * 0.5);
+        glow(W * 0.5 + Math.sin((sec * TAU) / 11) * W * 0.26, H * 0.3 + Math.cos((sec * TAU) / 13) * H * 0.1, Math.max(W, H) * 0.5, C.accent, 0.12);
+        glow(W * 0.5 + Math.cos((sec * TAU) / 14) * W * 0.3, H * 0.74 + Math.sin((sec * TAU) / 9) * H * 0.09, Math.max(W, H) * 0.52, C.text, 0.05);
+        drawField(f);
+        drawStreams(f);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.55, W / 2, H / 2, Math.max(W, H) * 0.75);
+        v.addColorStop(0, "rgba(0,0,0,0)");
+        v.addColorStop(1, "rgba(0,0,0,0.5)");
+        ctx.fillStyle = v;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = grain;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      K.drive("bg", K.DUR, render);
+    })();
+  </script>
+</template>

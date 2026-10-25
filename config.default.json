@@ -1,0 +1,39 @@
+{
+  "handle": null,
+  "channel": null,
+  "reelsRoot": "~/reels",
+  "language": "en",
+  "voiceStyle": "Plain conversational English; spell numbers the way they are spoken.",
+  "onScreenLanguage": "en",
+  "wordsPerSecond": 2.5,
+  "audioTags": true,
+  "durationTarget": [
+    45,
+    60
+  ],
+  "fps": 30,
+  "palette": {
+    "bg": "#0E0A16",
+    "text": "#EDE7F6",
+    "success": "#35D07F",
+    "white": "#FFFFFF",
+    "accent": "topic"
+  },
+  "fonts": {
+    "sans": "assets/fonts/NotoSansDevanagari-800.ttf",
+    "mono": "assets/fonts/JetBrainsMono-700.ttf"
+  },
+  "cta": {
+    "follow": "FOLLOW",
+    "spoken": "Follow for more."
+  },
+  "tts": {
+    "default": "voicestudio",
+    "voicestudioUrl": "http://127.0.0.1:3900",
+    "voicestudioProfile": null,
+    "instruct": null,
+    "chatterboxRef": null,
+    "sayVoice": null
+  },
+  "sfxDir": null
+}
