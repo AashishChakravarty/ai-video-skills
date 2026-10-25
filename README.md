@@ -9,6 +9,23 @@ You give a topic; Claude does the rest and stops for your review at three gates:
 and the **video** you want to publish. Any language your voice engine speaks works; it has been tested with
 English and Hindi/Hinglish.
 
+## How it works
+
+```mermaid
+flowchart LR
+  T[Topic] --> R[Research + script]
+  R --> G1{{Gate 1: script}}
+  G1 --> V[Voice-over]
+  V --> G2{{Gate 2: voice}}
+  G2 --> W[Word timings]
+  W --> B[HyperFrames build]
+  B --> G3{{Gate 3: video}}
+  G3 --> P[16:9 cut + publish pack]
+```
+
+Everything between gates runs without you. A reel's `reel.json` records the stage it reached, so any later
+session picks up where the last one stopped.
+
 ## What you get per reel
 
 - `research.md` with sourced facts, and `script.md`: hook, scenes, narration, timed on-screen beats
@@ -36,15 +53,19 @@ Windows is untested.
 ## Install
 
 ```bash
-git clone https://github.com/<you>/ai-video-skills.git ~/code/ai-video-skills
+git clone https://github.com/AashishChakravarty/ai-video-skills.git ~/code/ai-video-skills
 ln -s ~/code/ai-video-skills ~/.claude/skills/ai-video-skills      # Claude Code finds the skill here
 cd ~/code/ai-video-skills && npm install
+npx playwright install chromium                             # headless browser that draws compare.mjs labels
 node scripts/config.mjs set handle=@yourhandle channel="Your Channel" language=en reelsRoot=~/reels
 node scripts/doctor.mjs                                     # checks everything and prints fixes
 ```
 
 Plugins, if missing: `claude plugin marketplace add heygen-com/hyperframes && claude plugin install hyperframes`
 and `claude plugin marketplace add remotion-dev/skills && claude plugin install remotion`.
+
+To update: `cd ~/code/ai-video-skills && git pull && npm install && node scripts/doctor.mjs`. Your settings and
+pronunciation dictionary live outside the repo, so an update never overwrites them.
 
 ## Configure
 
@@ -66,6 +87,7 @@ node scripts/config.mjs set tts.voicestudioProfile=<id> "tts.instruct=indian acc
 | `language`, `voiceStyle`, `onScreenLanguage` | voice-over language code (`en`, `hi`, …), how narration is written, language of on-screen text |
 | `reelsRoot` | where new reel folders are created |
 | `wordsPerSecond`, `durationTarget` | script length estimates |
+| `fps` | frame rate of new reels (default 30) |
 | `audioTags` | write ElevenLabs-style audio tags (`[excited]`, `[pause]`…) into the narration |
 | `palette` | background, text, success and white; the accent comes from each topic's logo |
 | `fonts.sans`, `fonts.mono` | TTF files for captions/headlines and labels (default covers Latin + Devanagari) |
@@ -98,7 +120,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | `pronounce.mjs` | words the voice would read with the wrong accent; respellings saved per reel and for all reels |
 | `tts.mjs` | voice-over per scene via VoiceStudio, Chatterbox or `say` (audio tags translated), or imports a file |
 | `align.py` | forced alignment of the approved script to the audio → `words.json` |
-| `scaffold.mjs` | creates/refreshes a version's HyperFrames project (portrait or 16:9) |
+| `scaffold.mjs`, `starter.mjs` | creates/refreshes a version's HyperFrames project (portrait or 16:9); gives it a renderable starter scene per script scene plus a `cues.json` |
 | `mix.mjs` | voice + pad bed or ducked music + SFX cues → −14 LUFS |
 | `render.mjs`, `contact.mjs`, `compare.mjs` | check + render + contact sheet; side-by-side compare of two versions |
 | `srt.mjs`, `cover.mjs`, `publish.mjs` | subtitles, covers and the verified publish pack |
@@ -107,6 +129,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 
 ```
 SKILL.md                 workflow and gates (what Claude reads first)
+TESTING.md               setup check, scripts-only pipeline test, full skill test
 config.default.json      default settings (yours live in ~/.config/ai-video-skills/config.json)
 reference/               script.md · audio.md · build.md · publish.md — per-stage guides
 scripts/                 the tools above (Node + uv Python)

@@ -28,18 +28,21 @@ To test without touching your real settings, point everything at a throwaway con
 ## Level 2 — pipeline test (scripts only)
 
 Uses the 15-second example script and starter scenes, so nothing needs hand-written animation.
-Swap `script.en.md` for `script.hi.md` (and `language=hi` in your config) to test Hindi.
+A reel takes its language from the config when it is created, so set the language first (in the throwaway
+config from level 1 if you'd rather not change yours). To test Hindi, set `language=hi` and copy
+`script.hi.md` instead; it has 2 scenes and runs about 10 s, so expect 2 where the checks below say 3.
 
 ```bash
 S=~/.claude/skills/ai-video-skills/scripts
+node $S/config.mjs set language=en          # or language=hi with script.hi.md
 node $S/new-reel.mjs "Git rebase vs merge" --slug pipeline-test --root /tmp/reel-test --logo git
 cd /tmp/reel-test/pipeline-test
 cp ~/.claude/skills/ai-video-skills/examples/script.en.md script.md
 node $S/script.mjs vo
 ```
-✓ `vo.txt: 3 scenes, … words ≈ 14s`. The logo line shows the Git brand colour and the accent chosen from it.
-With the Hindi script, `node $S/pronounce.mjs` lists English words that still need a Devanagari respelling
-(most are already in the starter list); `node $S/pronounce.mjs list` shows the ones in use.
+✓ `vo.txt: 3 scenes, 37 words ≈ 15s`. The logo line shows the Git brand colour and the accent chosen from it.
+With the Hindi script, `node $S/pronounce.mjs` reports `every Latin word is respelled` (the starter list
+covers the example); `node $S/pronounce.mjs list` shows the respellings in use.
 
 **Audio script** — `node $S/script.mjs audio && open audio-script.md`: an ElevenLabs block with the tags
 (`[sighing]`, `[pause]`, `[excited]`), a plain block, and a per-scene table.
