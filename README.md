@@ -85,16 +85,39 @@ node scripts/config.mjs set tts.voicestudioProfile=<id> "tts.instruct=indian acc
 | Key | Meaning |
 |---|---|
 | `handle`, `channel` | shown in the header and follow CTA; used in captions |
+| `channelLogo` | your channel logo (PNG/JPG/WebP), shown round in the follow button |
+| `theme`, `themes` | the default theme for new reels, and your own themes (see Themes below) |
 | `language`, `voiceStyle`, `onScreenLanguage` | voice-over language code (`en`, `hi`, …), how narration is written, language of on-screen text |
 | `reelsRoot` | where new reel folders are created |
 | `wordsPerSecond`, `durationTarget` | script length estimates |
 | `fps` | frame rate of new reels (default 30) |
 | `audioTags` | write ElevenLabs-style audio tags (`[excited]`, `[pause]`…) into the narration |
-| `palette` | background, text, success and white; the accent comes from each topic's logo |
+| `palette` | background, text, success and white; `accent` is `topic` (from each topic's logo) or a fixed `#hex` |
 | `fonts.sans`, `fonts.mono` | TTF files for captions/headlines and labels (default covers Latin + Devanagari) |
+| `background` | `style` (`dots`, `grid` or `glow`) and the strength of `density`, `drift`, `glow`, `grain` (0–1) and `vignette` |
 | `cta.follow`, `cta.spoken` | follow button text and the spoken last line |
 | `tts.*` | default engine, VoiceStudio URL and voice, `tts.instruct` (accent/voice design, e.g. `indian accent`), Chatterbox reference clip, macOS voice |
 | `sfxDir` | folder of `.mp3` sound effects (default: the HyperFrames media-use library) |
+
+### Themes
+
+A theme is a named brand and look that new reels reuse: handle, channel, follow text and spoken follow line,
+channel logo, palette, fonts and background. Anything a theme leaves out comes from your settings above. Three
+starter themes ship in [`themes/`](themes): `midnight` (the default: purple night, dot field, accent from the topic),
+`terminal` (green on black with a blueprint grid) and `alert` (near-black, red accent, soft glows; made for security
+news). Your own themes live in your config.
+
+```bash
+node scripts/theme.mjs                                    # every theme; * marks the default
+node scripts/theme.mjs save brand --from alert channelLogo=~/brand/logo.png palette.accent=#FF5A5F
+node scripts/theme.mjs save second-channel handle=@other channel="Other" background.style=grid
+node scripts/theme.mjs default brand                      # new reels use it
+node scripts/new-reel.mjs "Kafka consumer groups" --theme terminal   # or pick one per reel
+node scripts/theme.mjs apply alert --reel <reel folder>   # switch an existing reel, then scaffold.mjs <v> --sync
+```
+
+Each reel keeps a copy of its theme in `reel.json`, so editing a theme later never changes reels you already
+made. In Claude Code just say "use the alert theme" or "save this look as my default".
 
 ### Pronunciation
 
@@ -116,7 +139,8 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | Script | Does |
 |---|---|
 | `doctor.mjs`, `config.mjs` | checks the machine; shows/changes settings |
-| `new-reel.mjs`, `logo.mjs` | creates a reel folder; sets the topic logo and a contrast-safe accent (simple-icons) |
+| `theme.mjs` | lists, saves, sets the default, applies and deletes themes (brand + look) |
+| `new-reel.mjs`, `logo.mjs` | creates a reel folder from a theme; sets the topic logo and a contrast-safe accent (simple-icons) |
 | `script.mjs vo` / `audio` / `time` | narration from script.md plus the paste-ready audio script; the audio script alone; `@word` beats → spoken times |
 | `pronounce.mjs` | words the voice would read with the wrong accent; respellings saved per reel and for all reels |
 | `tts.mjs` | voice-over per scene via VoiceStudio, Chatterbox or `say` (audio tags translated), or imports a file |
@@ -132,6 +156,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 SKILL.md                 workflow and gates (what Claude reads first)
 TESTING.md               setup check, scripts-only pipeline test, full skill test
 config.default.json      default settings (yours live in ~/.config/ai-video-skills/config.json)
+themes/                  starter themes: midnight, terminal, alert
 reference/               script.md · audio.md · build.md · publish.md — per-stage guides
 scripts/                 the tools above (Node + uv Python)
 pronounce/               starter respellings per voice-over language (hi.json)

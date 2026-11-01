@@ -32,12 +32,33 @@ brought to life.
   a halo, becomes one dot among many when the camera pulls back, and re-forms for the CTA, dropping the
   recap chips.
 - **Field**: the dot field is a character: it drifts toward the hero when things fly (`streams`), breathes
-  during loops, swarms or multiplies for scale moments and collapses back for the CTA.
+  during loops, swarms or multiplies for scale moments and collapses back for the CTA. The reel's theme sets
+  the background style (`reel.json → background`): `grid` keeps fewer dots under a blueprint grid; `glow` has
+  no dots, so field moments come from `streams`, `pulse` and the scenes themselves.
 - **Sound**: soft pad bed; pen-scribble or whoosh on strokes, light clicks on counter ticks, whooshes on
   flights, a bass impact on the one or two big reveals, a riser into the biggest number.
 
 Put the hero object, its resting poses and shared clocks in `build/a/assets/diagram.js` as pure functions
 of the frame, so neighbouring scenes draw the same object on the same frame and hand-offs line up exactly.
+
+### Design system (every version)
+
+`assets/design.js` (`window.Design`) is the shared system; diagram.js builds the topic's objects on top of it.
+
+- **One type scale**: every word comes from `text(…, { kind })`, `tag`, `flowRow`, `terminal` or `stamp` —
+  hero 96 (big numbers), title 64 (one per scene, on `GRID.title`), stamp 56, label 40 (names of things), chip
+  30 mono (tags, sub-lines, code), note 28. Never set a font size by hand, and never put text inside a scaled
+  object: labels sit beside or under the object at their own size.
+- **Standard object sizes**: each object (hero card, safe, key, signature, node, icon box 132 px) has one scale
+  used in every scene, so things read as one family; keep them in diagram.js (`SIZE`). A small object inside a
+  bigger one is centred in it and clearly smaller (the Binance key box: 0.32 inside a 0.85 card).
+- **Grid and spacing**: title row y 470, stage rows 640 / 820 / 1000 / 1180, columns x 300 / 780, note row 1300;
+  ≥ 24 px between any two boxes. When a spot is needed again, the old element fades out before the new one
+  fades in. Never shrink a crowded scene with `camera.scale` — re-lay it out on the grid.
+- **Explain with flows**: how-it-works scenes are vertical step flows (`flowRow` + `flowLink`, one step per
+  spoken name, the active step lit) or two-column comparisons; code and alerts go in a large `terminal` with
+  small mono text; the attacker is always the `hacker` icon (a user with a hat).
+- **No invented numbers**: illustrative values are symbolic ("NONCE n", "n+1"), never made-up digits.
 
 ### More than one version (only when asked)
 
@@ -82,25 +103,32 @@ other version; load `/hyperframes` first (and `/remotion-best-practices` for 3D)
 `render.mjs <v>` and report the check result, the probe line and the contact-sheet path. Review every
 contact sheet yourself before showing the user (§9), and fix once if needed.
 
+Even for one version, build the two scenes that set the look first (one explanation flow and the CTA), show
+their frames for approval, then build the rest — with helpers in parallel if you like. Give each helper the
+design-system rules above, the approved scenes as references, the exact hand-off poses and labels, and the
+checks from §9 (check, the font-size grep, a snapshot per beat); let each helper own only its scene files.
+
 ## 4. Layout and legibility (phone-first)
 
 `ReelKit.L` holds the layout for the format; read positions from it instead of hard-coding.
 
 | Portrait 1080×1920 | y range | Notes |
 |---|---|---|
-| Header (logo, wordmark, handle) | 0–210 | ticker below it from scene 2: 210–302 |
-| **Scene content** | 320–1340 | key text inside x 60–1020 |
-| Captions band | 1373–1488 | scene text never enters it |
+| Platform top bar | 0–250 | Reels/Shorts/TikTok draw their own UI here — nothing of ours but the dark band |
+| Header (logo, wordmark, handle) | 260–324 | optional ticker below it (off by default): 360–432, one item at a time, never scrolling |
+| **Scene content** | 450–1340 | `GRID`: title row 470, stage rows 640–1180, note row 1300; key text inside x 60–1020 |
+| Captions band | 1373–1469 | scene text never enters it |
 | Progress bar | 1538 | |
-| Follow footer | 1580–1676 | platform UI also covers this zone — nothing important below 1540 except the CTA |
+| Follow footer | 1590–1666 | platform UI also covers this zone — nothing important below 1540 except the CTA |
 
 Landscape 1920×1080: header 0–130 with the FOLLOW pill on the right, ticker 126–194, scene content
 y 220–850 × x 120–1800, captions 880–980, progress 1050.
 
 Fonts: `Reel Sans` and `Reel Mono` load `assets/fonts/reel-sans.ttf` / `reel-mono.ttf`, which scaffold copies from the
-config's `fonts.sans` / `fonts.mono` (default Noto Sans Devanagari 800, covering Latin + Devanagari, and JetBrains
-Mono 700). Sizes: body text ≥ 56 px,
-hero text ≥ 140 px, labels ≥ 44 px, captions 56 px. Declare the `@font-face` rules in every composition
+reel's theme `fonts.sans` / `fonts.mono` (default Noto Sans Devanagari 800, covering Latin + Devanagari, and JetBrains
+Mono 700). Colours come from `REEL.palette` (the theme's, with the topic accent); never hard-code them. Text on an
+accent fill uses `K.onAccent` (white, or the background colour when the accent is light, like Binance yellow). Sizes come from the
+type scale in `design.js` (§1 Design system); captions are 46 px and nothing on screen is under 28 px. Declare the `@font-face` rules in every composition
 that uses them (the linter checks per file). Contrast ≥ 4.5:1 — the accent from logo.mjs already is.
 
 ## 5. Timing and anchors
@@ -116,9 +144,9 @@ that uses them (the linter checks per file). Contrast ≥ 4.5:1 — the accent f
 ## 6. direction.js (shared layers)
 
 ```js
-camera: { hits: [[t, amp, dur]], pushes: [{ from, to, amount, release }], punches: [{ at, amount, decay }] },
+camera: { scale: 1 /* < 1 shrinks every scene around camOrigin for more breathing room */, hits: [[t, amp, dur]], pushes: [{ from, to, amount, release }], punches: [{ at, amount, decay }] },
 field:  { density: 1, drift: 1, events: [ /* swarm | breathe | split | shockwave | ring | streams | pulse */ ] },
-ticker: { from: null /* s; default scene 2 */, label: "LIVE", speed: 2.5 },
+ticker: null,  // off by default; { from: null /* s; default scene 2 */, label: "LIVE" } shows REEL.ticker items one at a time
 header: { logoFlashAt: null, wordmark: null },
 cta:    { pulseEvery: 2.5, flyAt: null /* s: FOLLOW flies into the final title */, next: "GenServer in 60s" },
 ```
@@ -143,7 +171,8 @@ them up with the clip's geometry (both use canvas pixels).
 - Scramble/decode effects resolve within ~8 frames, or paused frames read as typos.
 - Keep motion blur off text; enable `data-motion-blur` only on fast non-text movers.
 - A caption or label that changes must fade out before the next fades in — never cross-fade text.
-- Objects leaving upward pass through the header: fade them over ~5 frames before they reach y 300.
+- Objects leaving upward pass through the header: fade them over ~5 frames before they reach y 440.
+- Nothing scrolls sideways as a marquee — no running ticker, header or footer; text holds still and swaps in place.
 - Text on screen for less than ~0.5 s gets flagged by `check` and is unreadable; hold it to the next beat.
 - Deterministic only: `K.rng(seed)` / `K.hash(...)`, never `Math.random()` or `Date`.
 - Search `/hyperframes-registry` before hand-building a named effect (headline slam, number wheel,
@@ -156,6 +185,9 @@ them up with the clip's geometry (both use canvas pixels).
    new element for more than 2 tiles in a row; scene text never touches the captions band or header.
 3. Snapshot the hand-offs (`npx hyperframes snapshot --at <t1>,<t2>` in build/<v>) and look at them.
 4. Hook: something large and legible by 0.5 s.
+5. Design system: `grep -nE "fontSize|font-size|size: [0-9]" compositions/scene-*.html` prints nothing; the same
+   object is the same size in every tile; no two elements overlap or touch (≥ 24 px); `check` reports no
+   `content_overlap` or `text_below_floor` in any scene.
 Fix what fails and render once more; mention anything left over to the user.
 
 ## 10. Gate 3 — approve the version

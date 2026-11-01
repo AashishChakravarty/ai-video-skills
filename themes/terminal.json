@@ -1,0 +1,13 @@
+{
+  "description": "Green-on-black terminal: a faint blueprint grid with fewer dots and a fixed green accent.",
+  "palette": {
+    "bg": "#07110B",
+    "text": "#D8F5E1",
+    "success": "#7CF2A7",
+    "white": "#FFFFFF",
+    "accent": "#3DDC84"
+  },
+  "background": {
+    "style": "grid"
+  }
+}

@@ -78,9 +78,9 @@
           card.forEach((w, wi) => {
             const s = spans[wi], t = Math.max(start, snap(w.start)), pad = 14;
             const l = Math.max(0, s.offsetLeft - pad), r = Math.max(0, pw - (s.offsetLeft + s.offsetWidth + pad));
-            tl.to(hl, { clipPath: `inset(0px ${r}px 0px ${l}px round 18px)`, duration: wi ? 0.12 : 0.001, ease: "power3.out" }, t);
+            tl.to(hl, { clipPath: `inset(0px ${r}px 0px ${l}px round 18px)`, duration: wi && K.onAccent === C.white ? 0.12 : 0.001, ease: "power3.out" }, t);
             tl.set(spans, { color: DIM }, t);
-            tl.set(s, { color: C.white }, t);
+            tl.set(s, { color: K.onAccent }, t);
           });
           if (end < DUR) {
             tl.to(cap, { opacity: 0, duration: 0.12, ease: "power2.in" }, end - 0.12);

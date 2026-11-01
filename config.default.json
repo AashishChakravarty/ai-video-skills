@@ -1,6 +1,7 @@
 {
   "handle": null,
   "channel": null,
+  "channelLogo": null,
   "reelsRoot": "~/reels",
   "language": "en",
   "voiceStyle": "Plain conversational English; spell numbers the way they are spoken.",
@@ -12,6 +13,8 @@
     60
   ],
   "fps": 30,
+  "theme": "midnight",
+  "themes": {},
   "palette": {
     "bg": "#0E0A16",
     "text": "#EDE7F6",
@@ -22,6 +25,14 @@
   "fonts": {
     "sans": "assets/fonts/NotoSansDevanagari-800.ttf",
     "mono": "assets/fonts/JetBrainsMono-700.ttf"
+  },
+  "background": {
+    "style": "dots",
+    "density": 1,
+    "drift": 1,
+    "glow": 1,
+    "grain": 1,
+    "vignette": 1
   },
   "cta": {
     "follow": "FOLLOW",

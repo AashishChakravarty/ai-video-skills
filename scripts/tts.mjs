@@ -75,16 +75,19 @@ function prepRef(file, key) {
 }
 
 let preparedRef = null;
+const refPrepared = (voice) => existsSync(r.file(`audio/refs/${slug(voice)}.wav.json`));
 
 /** The clone reference for a voice: a recording on disk, or a saved VoiceStudio clone's own clip downloaded. */
 async function cloneRef(voice) {
   if (preparedRef) return preparedRef;
   if (isFile(voice)) return (preparedRef = prepRef(voice, slug(path.basename(voice, path.extname(voice)))));
   const full = r.file(`audio/refs/${slug(voice)}-full.audio`);
-  mkdirSync(r.file('audio/refs'), { recursive: true });
-  const res = await fetch(`${VS}/profiles/${voice}/audio`);
-  if (!res.ok) throw new Error(`could not download VoiceStudio voice ${voice}'s reference (${res.status})`);
-  writeFileSync(full, Buffer.from(await res.arrayBuffer()));
+  if (!refPrepared(voice)) {
+    mkdirSync(r.file('audio/refs'), { recursive: true });
+    const res = await fetch(`${VS}/profiles/${voice}/audio`);
+    if (!res.ok) throw new Error(`could not download VoiceStudio voice ${voice}'s reference (${res.status})`);
+    writeFileSync(full, Buffer.from(await res.arrayBuffer()));
+  }
   return (preparedRef = prepRef(full, slug(voice)));
 }
 
@@ -110,7 +113,8 @@ async function voicestudioTake(text, out) {
       return send(ref, retries - 1);
     }
   };
-  let res = await send(isFile(voice) ? await cloneRef(voice) : preparedRef);
+  // A clone already cut and transcribed for this reel skips the profile request VoiceStudio would reject (and can crash on).
+  let res = await send(isFile(voice) || (voice && refPrepared(voice)) ? await cloneRef(voice) : preparedRef);
   if (!res.ok) {
     const detail = await res.text();
     // A clone saved from a long clip needs a speech-to-text model in VoiceStudio; cut and transcribe it here instead.
@@ -251,7 +255,7 @@ if (opt.sample) {
   const sentences = scenes[0].text.match(/[^।?!]+[।?!]*/gu) ?? [scenes[0].text];
   let first = '';
   for (const s of sentences) if (first.split(/\s+/).filter(Boolean).length < 10) first += s;
-  const out = r.file(`audio/samples/${opt.engine}-${slug(opt.voice && path.basename(opt.voice))}.wav`);
+  const out = r.file(`audio/samples/${opt.engine}-${slug(opt.voice && path.basename(opt.voice))}${instruct ? `-${slug(instruct)}` : ''}.wav`);
   await render([{ id: 'sample', text: speakable(first.trim(), pron), out }]);
   console.log(`sample: ${out} (${probeDuration(out).toFixed(2)}s)`);
   process.exit(0);

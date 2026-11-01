@@ -6,8 +6,8 @@
  *   node scaffold.mjs <version> --sync [--reel dir]
  *
  * --from copies another version's scenes, direction and clip list (for the 16:9 cut of the picked version);
- * --sync only rewrites reel-data.js, the logo and every full-length duration (after a re-take or re-align),
- * never touching scenes or direction.js.
+ * --sync only rewrites reel-data.js, the logos, fonts, theme and every full-length duration (after a re-take,
+ * re-align or theme.mjs apply), never touching scenes or direction.js.
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -38,13 +38,16 @@ const format = opt.format ?? (existing ? readFileSync(path.join(dir, 'assets/ree
 if (!SIZES[format]) throw new Error(`--format must be portrait or landscape, got ${format}`);
 const [W, H] = SIZES[format];
 
-/** The data every layer reads: palette, logo, handle, ticker, scenes, words and resolved anchors. */
+const channelLogo = r.reel.channelLogo && existsSync(r.file(r.reel.channelLogo)) ? 'assets/channel-logo.png' : null;
+
+/** The data every layer reads: palette, background, logos, handle, ticker, scenes, words and resolved anchors. */
 function reelData() {
   const data = {
     format, W, H, fps, frames, duration: words.duration,
     title: r.reel.title, slug: r.reel.slug, handle: r.reel.handle ?? CONFIG.handle,
-    palette: r.reel.palette, logo: r.reel.logo ? { title: r.reel.logo.title, path: r.reel.logo.path } : null,
-    ticker: r.reel.ticker ?? [], cta: CONFIG.cta,
+    palette: r.reel.palette, background: r.reel.background ?? CONFIG.background,
+    logo: r.reel.logo ? { title: r.reel.logo.title, path: r.reel.logo.path } : null, channelLogo,
+    ticker: r.reel.ticker ?? [], cta: r.reel.cta ?? CONFIG.cta,
     scenes: words.scenes.map(({ id, start, end }) => ({ id, start, end })),
     words: words.words.map((w) => [w.word, w.start, w.end]),
     anchors: readJson(r.file('anchors.json')).map(({ scene, token, t }) => ({ scene, token, t })),
@@ -69,17 +72,27 @@ function copyTemplate(src, dst) {
   }
 }
 
-/** Copies the configured fonts in as reel-sans.ttf / reel-mono.ttf (the names every composition loads), GSAP, the logo and the data. */
+/** Copies the reel's theme fonts in as reel-sans.ttf / reel-mono.ttf (the names every composition loads), GSAP, the logos and the data. */
 function sharedAssets() {
+  const fonts = r.reel.fonts ?? CONFIG.fonts;
   mkdirSync(path.join(dir, 'assets/fonts'), { recursive: true });
   for (const [key, name] of [['sans', 'reel-sans.ttf'], ['mono', 'reel-mono.ttf']]) {
-    const src = configPath(CONFIG.fonts[key]);
-    if (!existsSync(src)) throw new Error(`font ${CONFIG.fonts[key]} (config fonts.${key}) not found`);
+    const src = configPath(fonts[key]);
+    if (!existsSync(src)) throw new Error(`font ${fonts[key]} (reel.json fonts.${key}) not found`);
     cpSync(src, path.join(dir, 'assets/fonts', name));
   }
   cpSync(path.join(SKILL, 'assets/gsap.min.js'), path.join(dir, 'assets/gsap.min.js'));
   if (existsSync(r.file('assets/logo.svg'))) cpSync(r.file('assets/logo.svg'), path.join(dir, 'assets/logo.svg'));
+  if (channelLogo) cpSync(r.file(r.reel.channelLogo), path.join(dir, channelLogo));
   writeFileSync(path.join(dir, 'assets/reel-data.js'), reelData());
+}
+
+/** Brings the theme's page background and the channel logo in the follow button up to date with reel.json. */
+function syncTheme() {
+  const index = path.join(dir, 'index.html'), chrome = path.join(dir, 'compositions/chrome.html');
+  writeFileSync(index, readFileSync(index, 'utf8').replace(/(html, body \{[^}]*background: )#[0-9A-Fa-f]{6}/, `$1${r.reel.palette.bg}`));
+  const avatar = channelLogo ? `<img id="ch-avatar" class="abs" src="${channelLogo}" alt="" />` : '<!-- @avatar -->';
+  if (existsSync(chrome)) writeFileSync(chrome, readFileSync(chrome, 'utf8').replace(/<img id="ch-avatar"[^>]*>|<!-- @avatar -->/, avatar));
 }
 
 /** Sets every full-length host (marked data-full) to the current duration. */
@@ -97,13 +110,15 @@ if (opt.sync) {
   if (!existing) throw new Error(`${dir} is not scaffolded yet; run without --sync`);
   sharedAssets();
   syncDurations();
-  console.log(`synced build/${version}: reel-data.js (${words.words.length} words, ${frames} frames), logo, durations ${dur}s`);
+  syncTheme();
+  console.log(`synced build/${version}: reel-data.js (${words.words.length} words, ${frames} frames), theme, logos, durations ${dur}s`);
   process.exit(0);
 }
 
 if (existing) throw new Error(`build/${version} already exists; use --sync to refresh data, or pick another version name`);
 copyTemplate(path.join(SKILL, 'templates/hyperframes'), dir);
 sharedAssets();
+syncTheme();
 
 if (opt.from) {
   const src = r.file('build', opt.from);
@@ -124,6 +139,11 @@ if (opt.from) {
   writeFileSync(index, readFileSync(index, 'utf8')
     .replace('<!-- @clips', `${clips.map(resize).join('\n      ')}${clips.length ? '\n\n      ' : ''}<!-- @clips`)
     .replace('<!-- @scenes', `${scenes.map(resize).join('\n      ')}${scenes.length ? '\n\n      ' : ''}<!-- @scenes`));
+  const managed = new Set(['direction.js', 'reel-data.js', 'reel-kit.js', 'design.js', 'gsap.min.js']);
+  const own = readdirSync(path.join(src, 'assets')).filter((n) => n.endsWith('.js') && !managed.has(n));
+  for (const n of own) cpSync(path.join(src, 'assets', n), path.join(dir, 'assets', n));
+  const kitTag = '<script src="assets/design.js"></script>';
+  if (own.length) writeFileSync(index, readFileSync(index, 'utf8').replace(kitTag, [kitTag, ...own.map((n) => `<script src="assets/${n}"></script>`)].join('\n    ')));
   if (existsSync(path.join(src, 'remotion'))) console.log(`note: re-render ${opt.from}'s Remotion clips at ${W}x${H} into build/${version}/assets/clips (see templates/remotion/README.md)`);
   console.log(`copied scenes, direction and hosts from build/${opt.from}; now re-lay every scene out for ${W}x${H}`);
 }

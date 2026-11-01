@@ -55,13 +55,13 @@
 
   const LAYOUTS = {
     portrait: {
-      W: 1080, H: 1920, camOrigin: [540, 1000],
-      header: { band: 210, logo: { x: 50, y: 90, size: 84 }, wordmark: { x: 140, y: 103, size: 56 }, handle: { right: 64, y: 103, size: 56 }, hair: 198 },
-      ticker: { top: 210, h: 92, size: 56, badgeW: 242 },
+      W: 1080, H: 1920, camOrigin: [540, 895],
+      header: { band: 360, logo: { x: 56, y: 260, size: 64 }, wordmark: { x: 132, y: 271, size: 42 }, handle: { right: 60, y: 270, size: 40 }, hair: 344 },
+      ticker: { top: 360, h: 72, size: 42, badgeW: 190 },
       progress: { y: 1538, x0: 90, x1: 990 },
-      footer: { bandTop: 1560, cta: { x: 59.5, y: 1580, w: 334, h: 96 }, textY: 1628, size: 56, handleX: 718, final: { followY: 930, followSize: 170, handleY: 1070, handleSize: 64 }, next: { x: 90, y: 1556, w: 900, h: 144, size: 64 } },
-      captions: { y: 1373, h: 115, size: 56, maxW: 880 },
-      safe: { top: 320, bottom: 1340, left: 60, right: 1020 },
+      footer: { bandTop: 1570, cta: { x: 60, y: 1590, w: 260, h: 76 }, textY: 1628, size: 44, handleX: 590, final: { followY: 930, followSize: 96, handleY: 1010, handleSize: 40 }, next: { x: 90, y: 1556, w: 900, h: 144, size: 64 } },
+      captions: { y: 1373, h: 96, size: 46, maxW: 880 },
+      safe: { top: 450, bottom: 1340, left: 60, right: 1020 },
     },
     landscape: {
       W: 1920, H: 1080, camOrigin: [960, 560],
@@ -118,7 +118,7 @@
 
   /** Applies the camera at time t to an element (depth < 1 for parallax layers behind the action). */
   function applyCam(el, t, depth = 1) {
-    const c = camAt(t), s = 1 + (c.s - 1) * depth;
+    const c = camAt(t), s = (1 + (c.s - 1) * depth) * ((D.camera && D.camera.scale) ?? 1);
     el.style.transformOrigin = `${L.camOrigin[0]}px ${L.camOrigin[1]}px`;
     el.style.transform = `translate(${(c.x * depth).toFixed(2)}px, ${(c.y * depth).toFixed(2)}px) scale(${s.toFixed(4)})`;
   }
@@ -139,5 +139,17 @@
     Promise.all(['800 56px "Reel Sans"', '700 56px "Reel Mono"'].map((f) => document.fonts.load(f, 'Aअ1'))).then(cb);
   }
 
-  window.ReelKit = { REEL, D, FPS, DUR, TAU, L, LAYOUTS, F, clamp, lerp, wrap, ease, prog, hash, rng, rgba, anchor, wordAt, scene, camAt, applyCam, drive, fonts };
+  /** WCAG relative luminance of a #rrggbb colour. */
+  const luminance = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    return [16, 8, 0].reduce((sum, s, i) => {
+      const c = ((n >> s) & 255) / 255;
+      return sum + [0.2126, 0.7152, 0.0722][i] * (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    }, 0);
+  };
+  const P = REEL.palette, ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+  /** Text colour that reads on an accent fill: white when it has 3:1 there (purple, red), else the background (yellow). */
+  const onAccent = ratio(P.white, P.accent) >= 3 ? P.white : P.bg;
+
+  window.ReelKit = { REEL, D, FPS, DUR, TAU, L, LAYOUTS, F, clamp, lerp, wrap, ease, prog, hash, rng, rgba, onAccent, anchor, wordAt, scene, camAt, applyCam, drive, fonts };
 })();

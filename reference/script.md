@@ -46,11 +46,14 @@ carries a fact the viewer acts on:
 
 ### Voice and rhythm
 
-Write for the ear, like someone who knows the subject telling a friend, fast and clear:
+Write for the ear, like someone who knows the subject explaining it to a friend — teach, don't report:
 
-- One fact per sentence, 3–10 words. Fragments are fine: "दो CVEs। [short pause] दोनों nine point two।"
-- Pauses carry the rhythm: `[short pause]` between punchy sentences, `[long pause]` before each new section
-  (a scene's first words) and before a reveal. They replace "and", "so" and "also".
+- One idea per sentence, joined the way people talk (तो, यानी, क्योंकि, पर). A string of clipped fragments
+  ("दो CVEs। दोनों nine point two।") sounds like a news bulletin, not an explanation.
+- Explain each mechanism with an everyday picture first, then name the term: a hot wallet is the exchange's
+  cash counter, the cold wallet its तिजोरी, an EIP-7702 delegation a power of attorney.
+- Punctuation carries the rhythm (`।` `,` `?` `...`). A pause tag goes only before a real reveal — about one
+  per scene at most, never at a scene's start (scenes already get a gap between them).
 - Turn a section with a one-word question ("Result?", "कैसे?") or an instruction that pulls the viewer in
   ("Trick समझो।").
 - Names go one per sentence and end on a closer: "WordPress। Drupal। Joomla। Wikipedia। सब कुछ।"
@@ -108,10 +111,11 @@ ElevenLabs-style tags in square brackets direct the voice: `VO: [excited] WhatsA
 connections चलाए। [pause] कैसे?`. They are never shown on screen or in subtitles (script.mjs strips them for
 vo.txt; vo.tagged.txt and audio-script.txt keep them). When `audioTags` is on, use the two kinds differently:
 
-- **Pause tags are rhythm; use them freely** (§Voice and rhythm). A pause before a word also makes it a
-  reliable beat anchor.
-- **Every other tag is seasoning**: an emotion at the hook's start (`[serious]` for an alert, `[excited]` for
-  a win, `[playful]`), maybe one more on the punchline; at most one vocalization (`[chuckling]`, `[sighing]`)
+- **Pause tags are rare**: one before a reveal, about one per scene at most (§Voice and rhythm). A pause
+  before a word also makes it a reliable beat anchor, so spend them on the big slams.
+- **Emotion tags carry the delivery**: one where the feeling changes, about one per scene — `[curious]` on a
+  question hook, `[whispering]` on a secret, `[excited]` on the trick, `[serious]` on the root cause, `[playful]`
+  on a light moment; at most one vocalization (`[chuckling]`, `[sighing]`)
   where a human would make it; sound-effect tags only when the user will generate on ElevenLabs — otherwise
   put the sound in cues.json. A mood tag on every line flattens the delivery.
 

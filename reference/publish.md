@@ -38,7 +38,7 @@ How to write them, and why:
   not its exact words (the video already says it).
 - **Language**: match the audience of the voice-over, but keep technical keywords in English — people
   search "elixir concurrency". For a Hindi reel, Hinglish (Roman-script Hindi + English terms) reads best.
-- **Value in 2–4 short lines**: the 3 takeaways from the script. Then the CTA with the configured handle
+- **Value in 2–4 short lines**: the 3 takeaways from the script. Then the CTA with the reel's handle (`reel.json → handle`)
   ("Follow @yourhandle — next: GenServer in 60s"), plus "Save this" on Instagram.
 - **Hashtags**: 3–5 specific ones (topic, language/framework, #programming or #coding, and one audience tag
   such as #codinginhindi for a Hindi reel). Specific beats generic.

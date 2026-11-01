@@ -1,0 +1,13 @@
+{
+  "description": "Security alert: near-black with a fixed red accent and slow glows, no dots.",
+  "palette": {
+    "bg": "#0F0A0B",
+    "text": "#F3E9EA",
+    "success": "#35D07F",
+    "white": "#FFFFFF",
+    "accent": "#FF4D5E"
+  },
+  "background": {
+    "style": "glow"
+  }
+}

@@ -15,12 +15,13 @@
     name: "{{VERSION}}",
     concept: "",
     camera: {
+      scale: 1,
       hits: [],
       pushes: [],
       punches: [],
     },
     field: { density: 1, drift: 1, events: [] },
-    ticker: { from: null, label: "LIVE", speed: 2.5 },
+    ticker: null,
     header: { logoFlashAt: null, wordmark: null },
     cta: { pulseEvery: 2.5, flyAt: null, next: null },
   };

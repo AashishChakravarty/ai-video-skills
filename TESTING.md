@@ -79,9 +79,19 @@ node $S/mix.mjs a               # ✓ … → -14.0 LUFS
 node $S/render.mjs a            # ✓ Check passed; out/a.mp4 1080x1920 30fps <frames> frames
 open out/a.mp4 out/a-contact.png
 ```
-Look for: header (logo, wordmark, handle), the ticker dropping in at scene 2, a moving dot field in every
+Look for: header (logo, wordmark, handle) clear of the phone's top bar (y ≥ 260), no ticker strip
+under it (off by default), a moving dot field in every
 contact-sheet tile, the beat labels slamming in on their words, karaoke captions in sync with the voice,
 the progress bar, and the pinned FOLLOW footer.
+
+**Themes** (optional) — `node $S/theme.mjs` lists `midnight`, `terminal` and `alert`. Switch this reel and build
+another version in that look:
+
+```bash
+node $S/theme.mjs apply terminal && node $S/scaffold.mjs t && node $S/starter.mjs t && node $S/mix.mjs t && node $S/render.mjs t
+open out/t.mp4          # green palette, blueprint grid; out/a.mp4 keeps the look it was built with
+node $S/theme.mjs apply midnight
+```
 
 **Second version and compare** (optional: the skill builds one version unless you ask for several)
 
@@ -128,6 +138,8 @@ Also test:
   clearly different directions, often in parallel, then show both plus `compare.mp4` and wait for a pick.
 - **Pronunciation**: ask it to fix a mispronounced term; it should add it to `pronounce.json` and re-take
   only that scene.
+- **Themes**: ask for "a reel about Log4Shell in the alert theme"; Claude should pass `--theme alert` to
+  `new-reel.mjs`. Ask it to save your brand colours and logo as the default theme; the next reel should use them.
 
 ## Troubleshooting
 

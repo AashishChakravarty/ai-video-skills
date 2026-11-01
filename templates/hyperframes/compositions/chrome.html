@@ -1,10 +1,12 @@
 <!--
   chrome: the persistent frame outside the camera, for the whole reel. Header (topic logo with a soft glow
-  that flashes at DIRECTION.header.logoFlashAt, wordmark, handle), the ticker that drops in at
-  DIRECTION.ticker.from (default: the second scene) and scrolls, the progress bar with a tick at every scene
+  that flashes at DIRECTION.header.logoFlashAt, wordmark, handle), the optional ticker (DIRECTION.ticker; null hides it) that fades in at
+  DIRECTION.ticker.from (default: the second scene) and shows one REEL.ticker item at a time in place (it never
+  scrolls), the progress bar with a tick at every scene
   start, and the follow CTA: in portrait a pinned "+ FOLLOW @handle" footer pulsing every
   DIRECTION.cta.pulseEvery seconds that, at DIRECTION.cta.flyAt, flies up into the final title while the
-  DIRECTION.cta.next card drops into its slot; in landscape a FOLLOW pill on the right of the header.
+  DIRECTION.cta.next card drops into its slot; in landscape a FOLLOW pill on the right of the header. With a
+  theme channel logo, scaffold.mjs puts it at @avatar and it shows round in the follow button instead of the "+".
 -->
 <template>
   <style>
@@ -46,13 +48,14 @@
       <div id="ch-btn" class="abs"></div>
       <div id="ch-plus-h" class="abs"></div>
       <div id="ch-plus-v" class="abs"></div>
+      <!-- @avatar -->
     </div>
     <div id="ch-follow" class="txt" data-layout-allow-overflow></div>
     <div id="ch-handle2" class="txt mono" data-layout-allow-overflow></div>
     <div id="ch-next" class="abs"></div>
 
     <div id="ch-ticker" class="abs" data-layout-allow-overflow data-layout-allow-overlap>
-      <div id="ch-tk-clip" class="abs"><div id="ch-tk-strip" class="txt mono" data-layout-allow-occlusion></div></div>
+      <div id="ch-tk-item" class="txt mono"></div>
       <div id="ch-tk-badge" class="abs"></div>
       <div id="ch-tk-dot" class="abs"></div>
       <div id="ch-tk-live" class="txt mono"></div>
@@ -62,18 +65,26 @@
     (function () {
       const K = window.ReelKit, { REEL, D, L, FPS, F, prog, lerp, ease, clamp, rgba } = K;
       const C = REEL.palette, W = L.W, TOTAL = REEL.frames;
-      const dir = { ticker: { label: "LIVE", speed: 2.5, ...(D.ticker || {}) }, header: D.header || {}, cta: { pulseEvery: 2.5, ...(D.cta || {}) } };
+      const dir = { ticker: D.ticker ? { label: "LIVE", ...D.ticker } : null, header: D.header || {}, cta: { pulseEvery: 2.5, ...(D.cta || {}) } };
       const q = (id) => document.getElementById(id);
       const set = (id, css) => Object.assign(q(id).style, css);
       const px = (v) => `${v}px`;
       const op = (node, a) => (node.style.opacity = String(clamp(a)));
       const items = REEL.ticker.length ? REEL.ticker : [REEL.logo ? REEL.logo.title : "", REEL.title].filter(Boolean);
-      const STRIP = items.map((s) => s.toUpperCase()).join("  ·  ") + "  ·  ";
-      const TICKER_AT = F(dir.ticker.from ?? (REEL.scenes[1] ? REEL.scenes[1].start : 0)) - 1;
+      const ITEMS = items.map((s) => s.toUpperCase());
+      const TICKER_AT = dir.ticker ? F(dir.ticker.from ?? (REEL.scenes[1] ? REEL.scenes[1].start : 0)) - 1 : Infinity;
+      const SLOT = (TOTAL - TICKER_AT) / ITEMS.length;
       const LOGO_FLASH = dir.header.logoFlashAt != null ? F(dir.header.logoFlashAt) : null;
       const FLY = L.footer && dir.cta.flyAt != null ? F(dir.cta.flyAt) : null;
       const PULSE = Math.max(1, F(dir.cta.pulseEvery));
       const hd = L.header, tk = L.ticker, pg = L.progress, ft = L.footer;
+      const avatar = q("ch-avatar"), FOLLOW = { x: ft ? ft.cta.x + ft.cta.w * 0.56 : 0, size: ft ? ft.size : 0 };
+
+      /** Shows the channel logo round at the button's left edge in place of the "+". */
+      function placeAvatar(d, inset) {
+        set("ch-avatar", { left: px(inset), top: px(inset), width: px(d), height: px(d), borderRadius: "50%", objectFit: "cover", background: C.bg, boxShadow: `0 0 0 3px ${C.white}` });
+        q("ch-plus-h").style.display = q("ch-plus-v").style.display = "none";
+      }
 
       function layout() {
         set("ch-head-band", { left: 0, top: 0, width: px(W), height: px(hd.band), background: `linear-gradient(${rgba(C.bg, 0.95)}, ${rgba(C.bg, 0)})` });
@@ -105,27 +116,42 @@
           q("ch-ticks").appendChild(t);
         }
 
-        set("ch-ticker", { left: 0, top: px(tk.top), width: px(W), height: px(tk.h), overflow: "hidden", background: rgba(C.bg, 0.9), borderTop: `2px solid ${rgba(C.accent, 0.55)}`, borderBottom: `2px solid ${rgba(C.accent, 0.55)}`, transform: `translateY(${-(tk.top + tk.h)}px)` });
+        if (!dir.ticker) q("ch-ticker").style.display = "none";
+        set("ch-ticker", { left: 0, top: px(tk.top), width: px(W), height: px(tk.h), overflow: "hidden", background: rgba(C.bg, 0.9), borderTop: `2px solid ${rgba(C.accent, 0.55)}`, borderBottom: `2px solid ${rgba(C.accent, 0.55)}`, opacity: 0 });
         set("ch-tk-badge", { left: 0, top: 0, width: px(tk.badgeW), height: px(tk.h), background: C.accent });
         set("ch-tk-dot", { left: px(tk.h * 0.29), top: px(tk.h * 0.38), width: px(tk.h * 0.24), height: px(tk.h * 0.24), borderRadius: "50%", background: C.bg });
-        q("ch-tk-live").textContent = dir.ticker.label;
+        q("ch-tk-live").textContent = dir.ticker ? dir.ticker.label : "";
         set("ch-tk-live", { left: px(tk.h * 0.7), top: px((tk.h - tk.size) / 2), fontSize: px(tk.size), letterSpacing: "3px", color: C.bg });
-        set("ch-tk-clip", { left: px(tk.badgeW), top: 0, width: px(W - tk.badgeW), height: px(tk.h), overflow: "hidden" });
-        set("ch-tk-strip", { left: "24px", top: px((tk.h - tk.size) / 2), fontSize: px(tk.size), letterSpacing: "3px", color: rgba(C.text, 0.92) });
+        set("ch-tk-item", { left: px(tk.badgeW + 28), top: px(tk.h / 2), transform: "translateY(-50%)", letterSpacing: "3px", color: rgba(C.text, 0.92) });
 
         if (ft) {
           q("ch-handle").textContent = REEL.handle;
-          set("ch-handle", { right: px(hd.handle.right), top: px(hd.handle.y), fontSize: px(hd.handle.size), color: rgba(C.text, 0.85) });
+          const meas = document.createElement("canvas").getContext("2d");
+          meas.font = `800 ${wm.size}px "Reel Sans"`;
+          meas.letterSpacing = "2px";
+          const wmRight = (REEL.logo ? wm.x : lg.x) + meas.measureText(q("ch-wordmark").textContent).width;
+          meas.font = `700 ${hd.handle.size}px "Reel Mono"`;
+          meas.letterSpacing = "0px";
+          const room = W - hd.handle.right - wmRight - 40, hs = Math.min(hd.handle.size, Math.floor((hd.handle.size * room) / meas.measureText(REEL.handle).width));
+          set("ch-handle", { right: px(hd.handle.right), top: px(hd.handle.y + (hd.handle.size - hs) / 2), fontSize: px(hs), color: rgba(C.text, 0.85) });
           set("ch-foot-band", { left: 0, top: px(ft.bandTop), width: px(W), height: px(L.H - ft.bandTop), background: `linear-gradient(${rgba(C.bg, 0)}, ${rgba(C.bg, 0.8)} 30%, ${rgba(C.bg, 0.95)})` });
           const b = ft.cta;
           set("ch-cta", { left: px(b.x), top: px(b.y), width: px(b.w), height: px(b.h), transformOrigin: `${b.w / 2}px ${b.h / 2}px` });
           set("ch-glowcta", { left: px(-b.h * 0.875), top: px(-b.h * 2.1), width: px(b.w + b.h * 1.75), height: px(b.h * 5.2), borderRadius: "50%", background: `radial-gradient(closest-side, ${rgba(C.accent, 0.35)}, ${rgba(C.accent, 0.12)} 50%, ${rgba(C.accent, 0)} 100%)` });
           set("ch-ring", { left: 0, top: 0, width: px(b.w), height: px(b.h), border: `3px solid ${C.accent}`, borderRadius: px(b.h / 2) });
           set("ch-btn", { left: 0, top: 0, width: px(b.w), height: px(b.h), borderRadius: px(b.h / 2), background: C.accent });
-          set("ch-plus-h", { left: "28px", top: px(b.h / 2 - 4), width: "28px", height: "8px", background: C.white });
-          set("ch-plus-v", { left: "38px", top: px(b.h / 2 - 14), width: "8px", height: "28px", background: C.white });
-          q("ch-follow").textContent = REEL.cta.follow;
-          set("ch-follow", { left: 0, top: 0, width: px(W), textAlign: "center", color: C.white });
+          const k = b.h / 96;
+          set("ch-plus-h", { left: px(28 * k), top: px(b.h / 2 - 4 * k), width: px(28 * k), height: px(8 * k), background: K.onAccent });
+          set("ch-plus-v", { left: px(38 * k), top: px(b.h / 2 - 14 * k), width: px(8 * k), height: px(28 * k), background: K.onAccent });
+          q("ch-follow").innerHTML = `<span>${REEL.cta.follow}</span>`;
+          set("ch-follow", { left: 0, top: 0, width: px(W), textAlign: "center", color: K.onAccent });
+          if (avatar) {
+            const d = b.h - 16, room = b.w - 8 - d - 24, meas = document.createElement("canvas").getContext("2d");
+            placeAvatar(d, 8);
+            meas.font = `800 ${ft.size}px "Reel Sans"`;
+            FOLLOW.x = b.x + 8 + d + (b.w - 8 - d) / 2;
+            FOLLOW.size = Math.min(ft.size, (ft.size * room) / meas.measureText(REEL.cta.follow).width);
+          }
           q("ch-handle2").textContent = REEL.handle;
           set("ch-handle2", { left: 0, top: 0, width: px(W), textAlign: "center", color: C.text });
           const n = ft.next;
@@ -137,21 +163,22 @@
           meas.font = `800 ${c.size}px "Reel Sans"`;
           const fw = meas.measureText(REEL.cta.follow).width;
           meas.font = `700 ${c.size}px "Reel Mono"`;
-          const hw = meas.measureText(REEL.handle).width, w = Math.ceil(72 + fw + 28 + hw + 36);
+          const lead = avatar ? 6 + (c.h - 12) + 12 : 64, hw = meas.measureText(REEL.handle).width, w = Math.ceil(lead + 8 + fw + 28 + hw + 36);
           set("ch-cta", { left: px(W - c.right - w), top: px(c.y), width: px(w), height: px(c.h), transformOrigin: `${w / 2}px ${c.h / 2}px` });
           set("ch-glowcta", { display: "none" });
           set("ch-ring", { left: 0, top: 0, width: px(w), height: px(c.h), border: `3px solid ${C.accent}`, borderRadius: px(c.h / 2) });
           set("ch-btn", { left: 0, top: 0, width: px(w), height: px(c.h), borderRadius: px(c.h / 2), background: C.accent });
-          set("ch-plus-h", { left: "24px", top: px(c.h / 2 - 3), width: "24px", height: "6px", background: C.white });
-          set("ch-plus-v", { left: "33px", top: px(c.h / 2 - 12), width: "6px", height: "24px", background: C.white });
-          q("ch-follow").textContent = REEL.cta.follow;
-          set("ch-follow", { left: px(W - c.right - w + 64), top: px(c.y + (c.h - c.size) / 2 + 2), fontSize: px(c.size), color: C.white });
+          set("ch-plus-h", { left: "24px", top: px(c.h / 2 - 3), width: "24px", height: "6px", background: K.onAccent });
+          set("ch-plus-v", { left: "33px", top: px(c.h / 2 - 12), width: "6px", height: "24px", background: K.onAccent });
+          if (avatar) placeAvatar(c.h - 12, 6);
+          q("ch-follow").innerHTML = `<span>${REEL.cta.follow}</span>`;
+          set("ch-follow", { left: px(W - c.right - w + lead), top: px(c.y + (c.h - c.size) / 2 + 2), fontSize: px(c.size), color: K.onAccent });
           q("ch-handle2").textContent = REEL.handle;
-          set("ch-handle2", { left: px(W - c.right - w + 64 + fw + 28), top: px(c.y + (c.h - c.size) / 2 + 2), fontSize: px(c.size), color: C.white });
+          set("ch-handle2", { left: px(W - c.right - w + lead + fw + 28), top: px(c.y + (c.h - c.size) / 2 + 2), fontSize: px(c.size), color: K.onAccent });
         }
       }
 
-      let stripW = 1;
+      let sizes = ITEMS.map(() => tk.size);
       function render(t) {
         const f = Math.round(t * FPS), p = f / (TOTAL - 1);
         q("ch-fill").style.transform = `scaleX(${p.toFixed(5)})`;
@@ -162,9 +189,13 @@
         op(q("ch-logoglow"), (0.22 + 0.06 * Math.sin(f * 0.1) + 0.6 * flash) / 0.5);
         op(q("ch-hair"), 1 - prog(f, TICKER_AT, 12));
 
-        const drop = f >= TICKER_AT ? 1 - prog(f, TICKER_AT, 12, ease.expoOut) : 1;
-        q("ch-ticker").style.transform = `translateY(${(-(tk.top + tk.h) * drop).toFixed(2)}px)`;
-        q("ch-tk-strip").style.transform = `translateX(${(-((Math.max(0, f - TICKER_AT) * dir.ticker.speed) % stripW)).toFixed(2)}px)`;
+        if (dir.ticker) {
+          op(q("ch-ticker"), prog(f, TICKER_AT, 10, ease.outCubic));
+          const i = clamp(Math.floor((f - TICKER_AT) / SLOT), 0, ITEMS.length - 1), from = TICKER_AT + i * SLOT, item = q("ch-tk-item");
+          item.textContent = ITEMS[i];
+          item.style.fontSize = px(sizes[i]);
+          op(item, Math.min(i > 0 ? prog(f, from, 6) : 1, i < ITEMS.length - 1 ? 1 - prog(f, from + SLOT - 6, 6) : 1));
+        }
 
         const fly = FLY != null ? prog(f, FLY, 10, ease.expoOut) : 0, k = (f % PULSE) / PULSE;
         const bump = fly > 0 ? 1 : 1 + 0.06 * Math.sin(Math.PI * clamp(k / 0.16));
@@ -176,10 +207,11 @@
         Object.assign(ring.style, { left: px(-grow), top: px(-grow), width: px(bw + grow * 2), height: px(bh + grow * 2), borderRadius: px(bh / 2 + grow) });
 
         if (!ft) return;
-        const cx = W / 2, fin = ft.final, followX = ft.cta.x + 187, b = ft.cta;
-        const fs = lerp(ft.size, fin.followSize, fly), fx = lerp(followX, cx, fly), fy = lerp(ft.textY, fin.followY, fly);
+        const cx = W / 2, fin = ft.final, b = ft.cta;
+        const fs = lerp(FOLLOW.size, fin.followSize, fly), fx = lerp(FOLLOW.x, cx, fly), fy = lerp(ft.textY, fin.followY, fly);
         const follow = q("ch-follow"), handle2 = q("ch-handle2"), next = q("ch-next");
         follow.style.fontSize = px(fs.toFixed(2));
+        follow.style.color = fly > 0.15 ? C.white : K.onAccent;
         follow.style.top = px((fy - 0.52 * fs).toFixed(2));
         follow.style.transformOrigin = `${(cx + (b.x + b.w / 2) - fx).toFixed(2)}px ${(0.52 * fs + ft.textY - fy).toFixed(2)}px`;
         follow.style.transform = `translateX(${(fx - cx).toFixed(2)}px) scale(${bump.toFixed(4)})`;
@@ -198,8 +230,8 @@
         const meas = document.createElement("canvas").getContext("2d");
         meas.font = `700 ${tk.size}px "Reel Mono"`;
         meas.letterSpacing = "3px";
-        stripW = meas.measureText(STRIP).width;
-        q("ch-tk-strip").textContent = STRIP.repeat(Math.ceil((2 * (W - tk.badgeW)) / stripW) + 1);
+        const room = W - tk.badgeW - 56;
+        sizes = ITEMS.map((s) => Math.min(tk.size, Math.floor((tk.size * room) / meas.measureText(s).width)));
         K.drive("chrome", K.DUR, render);
       });
     })();

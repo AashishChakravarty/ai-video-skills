@@ -3,7 +3,7 @@
  * vo.txt parsing, ffmpeg/ffprobe wrappers and colour contrast maths.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +40,29 @@ export function readJson(file) {
 
 export function writeJson(file, data) {
   writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+/** A key=value value: JSON when it parses (2.4, true, ["a"]), otherwise the string itself. */
+export function parseValue(value) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+/** Sets a dotted path's keys in obj, creating objects on the way; value undefined deletes the key. */
+export function setPath(obj, keys, value) {
+  const last = keys.pop();
+  let node = obj;
+  for (const k of keys) node = node[k] = node[k] && typeof node[k] === 'object' ? node[k] : {};
+  if (value === undefined) delete node[last];
+  else node[last] = value;
+}
+
+/** Nested objects as [["a.b", value], …]; arrays count as values. */
+export function flatten(obj, prefix = '') {
+  return Object.entries(obj).flatMap(([k, v]) => (v && typeof v === 'object' && !Array.isArray(v) ? flatten(v, `${prefix}${k}.`) : [[`${prefix}${k}`, v]]));
 }
 
 /** The SFX library: AI_VIDEO_SKILLS_SFX or config sfxDir, else the HyperFrames media-use library; null when none has MP3s. */
@@ -318,4 +341,58 @@ export function appliedFixes(text, map) {
     if (w && lookup(map, w) && !fixes.has(w.toLowerCase())) fixes.set(w.toLowerCase(), lookup(map, w));
   }
   return [...fixes];
+}
+
+/** Keys a theme may set: the brand (handle, channel, follow CTA, channel logo) and the look; the rest stays global. */
+export const THEME_KEYS = ['description', 'handle', 'channel', 'cta', 'channelLogo', 'palette', 'fonts', 'background'];
+export const BACKGROUND_STYLES = ['dots', 'grid', 'glow'];
+const PLACEHOLDER_ACCENT = '#9B5DE5';
+
+/** Starter themes shipped as themes/<name>.json. */
+export function starterThemes() {
+  const dir = path.join(SKILL, 'themes');
+  if (!existsSync(dir)) return {};
+  return Object.fromEntries(readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => [f.slice(0, -5), readJson(path.join(dir, f))]));
+}
+
+/** A theme as a new reel gets it: your global brand and look, then the starter of that name, then your theme. */
+export function resolveTheme(name = CONFIG.theme, themes = CONFIG.themes) {
+  const starter = starterThemes()[name], mine = themes?.[name];
+  if (!starter && !mine) throw new Error(`no theme "${name}"; node theme.mjs lists them`);
+  const base = Object.fromEntries(THEME_KEYS.slice(1).map((k) => [k, CONFIG[k] ?? null]));
+  return merge(merge(base, starter ?? {}), mine ?? {});
+}
+
+/** What is wrong with a resolved theme: errors block it (bad colour, style, missing file), warnings flag low contrast. */
+export function checkTheme(t) {
+  const errors = [], warnings = [], hex = /^#[0-9A-Fa-f]{6}$/, p = t.palette ?? {}, b = t.background ?? {};
+  for (const k of ['bg', 'text', 'success', 'white']) if (!hex.test(p[k] ?? '')) errors.push(`palette.${k} must be #RRGGBB, got ${p[k]}`);
+  if (p.accent !== 'topic' && !hex.test(p.accent ?? '')) errors.push(`palette.accent must be "topic" or #RRGGBB, got ${p.accent}`);
+  if (!BACKGROUND_STYLES.includes(b.style)) errors.push(`background.style must be ${BACKGROUND_STYLES.join(' | ')}, got ${b.style}`);
+  for (const k of ['density', 'drift', 'glow', 'grain', 'vignette']) if (!(typeof b[k] === 'number' && b[k] >= 0)) errors.push(`background.${k} must be a number ≥ 0, got ${b[k]}`);
+  for (const k of ['sans', 'mono']) if (!t.fonts?.[k] || !existsSync(configPath(t.fonts[k]))) errors.push(`fonts.${k} not found: ${t.fonts?.[k]}`);
+  if (t.channelLogo && !/\.(png|jpe?g|webp)$/i.test(t.channelLogo)) errors.push(`channelLogo must be a PNG, JPG or WebP image, got ${t.channelLogo}`);
+  else if (t.channelLogo && !existsSync(configPath(t.channelLogo))) errors.push(`channelLogo not found: ${t.channelLogo}`);
+  if (!t.handle) errors.push('no handle: set one in the theme or globally (config.mjs set handle=@you)');
+  if (!errors.length && contrast(p.text, p.bg) < 4.5) warnings.push(`text on bg is ${contrast(p.text, p.bg).toFixed(2)}:1; aim for 4.5:1`);
+  if (!errors.length && p.accent !== 'topic' && contrast(p.accent, p.bg) < 4.5) warnings.push(`accent on bg is ${contrast(p.accent, p.bg).toFixed(2)}:1; aim for 4.5:1 (a lighter tint: ${readableAccent(p.accent, p.bg)})`);
+  return { errors, warnings };
+}
+
+/** Writes a theme's brand and look into a reel (reel.json, assets/channel-logo.png); a "topic" accent follows its logo. */
+export function applyTheme(r, name) {
+  const t = resolveTheme(name), { errors } = checkTheme(t);
+  if (errors.length) throw new Error(`theme "${name}": ${errors.join('; ')}`);
+  const topic = t.palette.accent === 'topic';
+  const accent = !topic ? t.palette.accent : r.reel.logo ? readableAccent(r.reel.logo.hex, t.palette.bg) : PLACEHOLDER_ACCENT;
+  Object.assign(r.reel, {
+    theme: name, handle: t.handle, channel: t.channel, cta: t.cta, palette: { ...t.palette, accent },
+    accentSource: topic ? 'topic' : 'theme', fonts: t.fonts, background: t.background, channelLogo: null,
+  });
+  if (t.channelLogo) {
+    mkdirSync(r.file('assets'), { recursive: true });
+    ffmpeg(['-i', configPath(t.channelLogo), '-vf', 'scale=256:256:force_original_aspect_ratio=increase,crop=256:256', '-frames:v', '1', r.file('assets/channel-logo.png')]);
+    r.reel.channelLogo = 'assets/channel-logo.png';
+  }
+  return t;
 }

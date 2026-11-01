@@ -1,6 +1,7 @@
 /**
  * logo.mjs: sets a reel's topic logo and accent colour from simple-icons (CC0 brand SVGs). Writes
- * assets/logo.svg (24×24 path) and stores the logo plus a contrast-safe accent in reel.json.
+ * assets/logo.svg (24×24 path) and stores the logo plus a contrast-safe accent in reel.json; a theme with a fixed
+ * accent keeps its own.
  *
  *   node logo.mjs <slug-or-title> [--reel dir]
  *   node logo.mjs --search <text>
@@ -39,10 +40,10 @@ if (!icon) {
 const r = loadReel(opt.reel);
 mkdirSync(r.file('assets'), { recursive: true });
 writeFileSync(r.file('assets/logo.svg'), `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="${icon.path}"/></svg>\n`);
-const brandHex = `#${icon.hex}`;
-const accent = readableAccent(brandHex, r.reel.palette.bg);
+const brandHex = `#${icon.hex}`, fixed = r.reel.accentSource === 'theme';
+const accent = fixed ? r.reel.palette.accent : readableAccent(brandHex, r.reel.palette.bg);
 r.reel.logo = { slug: icon.slug, title: icon.title, hex: brandHex, path: icon.path };
 r.reel.palette.accent = accent;
 r.save();
-console.log(`logo: ${icon.title} (${icon.slug}) brand ${brandHex} → accent ${accent} (contrast ${contrast(accent, r.reel.palette.bg).toFixed(2)}:1 on ${r.reel.palette.bg})`);
+console.log(`logo: ${icon.title} (${icon.slug}) brand ${brandHex} → accent ${accent}${fixed ? ` (fixed by theme ${r.reel.theme})` : ''} (contrast ${contrast(accent, r.reel.palette.bg).toFixed(2)}:1 on ${r.reel.palette.bg})`);
 console.log(`wrote ${r.file('assets/logo.svg')}`);

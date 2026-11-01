@@ -9,7 +9,7 @@ import { existsSync, statfsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { CONFIG, CONFIG_PATH, SKILL, USER_CONFIG, sfxDir } from './lib.mjs';
+import { CONFIG, CONFIG_PATH, SKILL, USER_CONFIG, checkTheme, resolveTheme, sfxDir } from './lib.mjs';
 
 const { values: opt } = parseArgs({ options: { fix: { type: 'boolean' } } });
 const HOME = os.homedir(), HUB = path.join(HOME, '.cache/huggingface/hub'), MAC = process.platform === 'darwin';
@@ -63,6 +63,15 @@ const engine = CONFIG.tts.default, voice = { voicestudio: CONFIG.tts.voicestudio
 add('optional', 'default voice', Boolean(voice), voice ? `${engine} · ${voice}${engine === 'voicestudio' && CONFIG.tts.instruct ? ` · ${CONFIG.tts.instruct}` : ''}` : `${engine} · none chosen (asked at the voice step)`, engine === 'chatterbox'
   ? `node ${path.join(SKILL, 'scripts/config.mjs')} set tts.chatterboxRef=~/voice/me.wav   (a clean 5–15 s clip)`
   : `node ${path.join(SKILL, 'scripts/tts.mjs')} --engine voicestudio --voices, then node ${path.join(SKILL, 'scripts/config.mjs')} set tts.voicestudioProfile=<id> ["tts.instruct=indian accent"]`);
+
+let theme = null, themeProblems;
+try {
+  theme = resolveTheme();
+  themeProblems = checkTheme(theme).errors;
+} catch (e) {
+  themeProblems = [e.message];
+}
+add('required', 'default theme', !themeProblems.length, theme ? `${CONFIG.theme} · ${theme.background.style} · accent ${theme.palette.accent}${theme.channelLogo ? ' · channel logo' : ''}` : CONFIG.theme, `${themeProblems.join('; ')} (node ${path.join(SKILL, 'scripts/theme.mjs')} show ${CONFIG.theme})`);
 
 const fs = statfsSync(HOME), freeGb = (fs.bavail * fs.bsize) / 1e9;
 add('required', 'free disk ≥ 10 GB', freeGb >= 10, `${freeGb.toFixed(0)} GB free`, 'free some space: renders and models are large');

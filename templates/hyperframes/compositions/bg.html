@@ -1,6 +1,9 @@
 <!--
   bg: the living backdrop for the whole reel on one canvas — base colour, two drifting glows, ~1500 twinkling
-  dots, vignette and grain — riding the shared camera at 40% depth. The dots react to DIRECTION.field.events:
+  dots, vignette and grain — riding the shared camera at 40% depth. The theme's REEL.background picks the style
+  (dots; grid: a drifting blueprint grid with 45% of the dots; glow: stronger glows and no dots) and scales density,
+  drift, glow, grain (0–1) and vignette; DIRECTION.field.density/drift multiply on top. The dots react to
+  DIRECTION.field.events (a glow background has no dots, so only streams and pulse show):
     swarm     {from, to, x, y, w, h, share?, respawn?}  dots stream into a rect, then respawn
     breathe   {from, to}                                 brightness waves roll up the field
     split     {from, to}                                 every dot splits into twins, merging back at `to`
@@ -22,6 +25,7 @@
     (function () {
       const K = window.ReelKit, { REEL, L, FPS, TAU, F, prog, lerp, wrap, ease, rgba, rng } = K;
       const W = L.W, H = L.H, C = REEL.palette, field = K.D.field || {};
+      const B = { style: "dots", density: 1, drift: 1, glow: 1, grain: 1, vignette: 1, ...(REEL.background || {}) };
       const events = (field.events || []).map((e) => ({ ...e }));
       const of = (type) => events.filter((e) => e.type === type);
       const canvas = document.getElementById("bg-canvas");
@@ -69,7 +73,8 @@
       }
 
       const COLORS = [C.text, C.accent, C.success, C.white];
-      const COUNT = Math.round(1500 * (field.density ?? 1)), DRIFT = field.drift ?? 1;
+      const SHARE = { dots: 1, grid: 0.45, glow: 0 }[B.style] ?? 1, GLOW = B.glow * (B.style === "glow" ? 1.8 : 1);
+      const COUNT = Math.round(1500 * SHARE * B.density * (field.density ?? 1)), DRIFT = B.drift * (field.drift ?? 1);
       const DOTS = (() => {
         const r = rng(1500);
         return Array.from({ length: COUNT }, () => {
@@ -186,6 +191,28 @@
         }
       }
 
+      /** The "grid" style: fine lines every 60 px with a brighter accent line every fourth, drifting slowly up. */
+      function drawGrid(sec) {
+        const step = 60, off = (sec * 6 * B.drift) % (step * 4), x0 = -W * 0.3, x1 = W * 1.3, y0 = -H * 0.3, y1 = H * 1.3;
+        const isMajor = (i) => ((i % 4) + 4) % 4 === 0;
+        for (const major of [false, true]) {
+          ctx.strokeStyle = major ? rgba(C.accent, 0.16) : rgba(C.text, 0.05);
+          ctx.lineWidth = major ? 2 : 1;
+          ctx.beginPath();
+          for (let i = Math.floor(x0 / step); i * step <= x1; i++) {
+            if (isMajor(i) !== major) continue;
+            ctx.moveTo(i * step, y0);
+            ctx.lineTo(i * step, y1);
+          }
+          for (let j = Math.floor((y0 + off) / step); j * step - off <= y1; j++) {
+            if (isMajor(j) !== major) continue;
+            ctx.moveTo(x0, j * step - off);
+            ctx.lineTo(x1, j * step - off);
+          }
+          ctx.stroke();
+        }
+      }
+
       function render(t) {
         const f = Math.round(t * FPS), sec = f / FPS, cam = K.camAt(sec);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -194,18 +221,21 @@
         ctx.fillRect(0, 0, W, H);
         const s = 1 + (cam.s - 1) * 0.4, [ox, oy] = L.camOrigin;
         ctx.setTransform(s, 0, 0, s, ox * (1 - s) + cam.x * 0.5, oy * (1 - s) + cam.y * 0.5);
-        glow(W * 0.5 + Math.sin((sec * TAU) / 11) * W * 0.26, H * 0.3 + Math.cos((sec * TAU) / 13) * H * 0.1, Math.max(W, H) * 0.5, C.accent, 0.12);
-        glow(W * 0.5 + Math.cos((sec * TAU) / 14) * W * 0.3, H * 0.74 + Math.sin((sec * TAU) / 9) * H * 0.09, Math.max(W, H) * 0.52, C.text, 0.05);
+        glow(W * 0.5 + Math.sin((sec * TAU) / 11) * W * 0.26, H * 0.3 + Math.cos((sec * TAU) / 13) * H * 0.1, Math.max(W, H) * 0.5, C.accent, 0.12 * GLOW);
+        glow(W * 0.5 + Math.cos((sec * TAU) / 14) * W * 0.3, H * 0.74 + Math.sin((sec * TAU) / 9) * H * 0.09, Math.max(W, H) * 0.52, C.text, 0.05 * GLOW);
+        if (B.style === "grid") drawGrid(sec);
         drawField(f);
         drawStreams(f);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.55, W / 2, H / 2, Math.max(W, H) * 0.75);
         v.addColorStop(0, "rgba(0,0,0,0)");
-        v.addColorStop(1, "rgba(0,0,0,0.5)");
+        v.addColorStop(1, `rgba(0,0,0,${Math.min(1, 0.5 * B.vignette)})`);
         ctx.fillStyle = v;
         ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = Math.min(1, B.grain);
         ctx.fillStyle = grain;
         ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
       }
 
       K.drive("bg", K.DUR, render);

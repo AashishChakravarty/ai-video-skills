@@ -10,29 +10,9 @@
  */
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { CONFIG, CONFIG_PATH, USER_CONFIG, writeJson } from './lib.mjs';
+import { CONFIG, CONFIG_PATH, USER_CONFIG, flatten, parseValue, setPath, writeJson } from './lib.mjs';
 
 const [command, ...pairs] = process.argv.slice(2);
-
-function parse(value) {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
-
-function setPath(obj, keys, value) {
-  const last = keys.pop();
-  let node = obj;
-  for (const k of keys) node = node[k] = node[k] && typeof node[k] === 'object' ? node[k] : {};
-  if (value === undefined) delete node[last];
-  else node[last] = value;
-}
-
-function flatten(obj, prefix = '') {
-  return Object.entries(obj).flatMap(([k, v]) => (v && typeof v === 'object' && !Array.isArray(v) ? flatten(v, `${prefix}${k}.`) : [[`${prefix}${k}`, v]]));
-}
 
 if (command === 'set' || command === 'unset') {
   if (!pairs.length) throw new Error(`usage: node config.mjs ${command} key${command === 'set' ? '=value' : ''} …`);
@@ -41,7 +21,7 @@ if (command === 'set' || command === 'unset') {
     const at = pair.indexOf('=');
     if (command === 'set' && at < 1) throw new Error(`expected key=value, got "${pair}"`);
     const key = command === 'set' ? pair.slice(0, at) : pair;
-    setPath(next, key.split('.'), command === 'set' ? parse(pair.slice(at + 1)) : undefined);
+    setPath(next, key.split('.'), command === 'set' ? parseValue(pair.slice(at + 1)) : undefined);
   }
   mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
   writeJson(CONFIG_PATH, next);

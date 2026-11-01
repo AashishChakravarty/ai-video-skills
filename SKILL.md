@@ -13,6 +13,9 @@ Scripts live in `~/.claude/skills/ai-video-skills/scripts` (call it `$S`); every
 or runs from inside the reel folder. The user's settings (handle, channel, language, reels folder, CTA,
 palette, fonts, TTS defaults) live in `~/.config/ai-video-skills/config.json` over the repo's
 `config.default.json`; `node $S/config.mjs` shows them and `node $S/config.mjs set key=value …` changes them.
+Their brand and look can also be saved as named themes (handle, channel, CTA, channel logo, palette, fonts,
+background) that new reels reuse: `node $S/theme.mjs` lists them, `theme.mjs save <name> --from <theme> key=value …`
+creates one, `theme.mjs default <name>` makes it the default.
 
 ## Stage 0 — start or resume
 
@@ -25,15 +28,21 @@ palette, fonts, TTS defaults) live in `~/.config/ai-video-skills/config.json` ov
    with `config.mjs set tts.default=<engine> tts.voicestudioProfile=<id>` (or `tts.chatterboxRef=<clip>`), plus
    `"tts.instruct=indian accent"` (or another accent) when their audience expects one. Doctor's `default voice`
    row shows the choice; if it is `!` on a later run, ask then. The user can change it any time the same way.
+   Also offer, with `midnight` as the default, a look from `node $S/theme.mjs` and an optional channel logo for
+   the follow button (`config.mjs set channelLogo=<png>`). When they describe a brand (colours, a second channel),
+   save it as a theme and make it the default if they want it on every reel.
 2. If the current folder (or a folder the user names) has `reel.json` and its `stage` is not `done`, read it
    and resume at that stage; say where you are resuming in one line. If the user names a new topic, or the
    reel is `done`, start a new reel instead (step 3) — every topic gets its own folder.
 3. Otherwise ask for the topic — just the topic; offer, don't require, an angle, length (default 45–60 s)
    and language (default from the config).
    Then: `node $S/new-reel.mjs "<topic>" --logo <simple-icons slug>` (find slugs with
-   `node $S/logo.mjs --search <text>`). It creates `<reelsRoot>/<slug>/` with templates and picks a
-   contrast-safe accent from the topic's brand colour (a taken slug fails: pass `--slug <topic>-2`). Set
-   `reel.json → ticker` (4–6 short items). From here on pass `--reel <that folder>` to every script (or work
+   `node $S/logo.mjs --search <text>`), adding `--theme <name>` when the user asks for a look (`alert` suits
+   security news). It creates `<reelsRoot>/<slug>/` with templates and the theme's brand and look, and picks a
+   contrast-safe accent from the topic's brand colour unless the theme fixes one (a taken slug fails: pass
+   `--slug <topic>-2`). To change an existing reel's look later: `theme.mjs apply <name>`, then
+   `scaffold.mjs <v> --sync` for each built version. A ticker strip under the header is off by default; only
+   when the user asks for one, set `reel.json → ticker` (4–6 short items) and build.md §6. From here on pass `--reel <that folder>` to every script (or work
    from inside it): scripts otherwise act on the reel.json nearest the current directory.
 
 ## Stage 1–2 — research and script → Gate 1
@@ -41,7 +50,7 @@ palette, fonts, TTS defaults) live in `~/.config/ai-video-skills/config.json` ov
 Read `reference/script.md`, then research (with sources) into `research.md` and write `script.md` in its
 voice (§Voice and rhythm; the alert arc for news). When the user hands you their own draft, keep its words
 and rhythm and change only the facts, the writing system (Devanagari for Hindi) and the format. When the
-config's `audioTags` is true, pause tags carry the rhythm and other tags stay sparing (script.md §Audio tags).
+config's `audioTags` is true, pause tags stay rare and an emotion tag marks each change of feeling (script.md §Audio tags).
 
 Run `node $S/script.mjs vo`. It writes `vo.txt` and `audio-script.txt` (the whole narration as the voice will
 read it, ready to paste into any TTS) and lists what the voice would misread. Spell listed numerals out in
@@ -87,7 +96,9 @@ exact time (`script.timed.md`, `anchors.json`). Glance at the scene boundaries i
 Read `reference/build.md` and load the `/hyperframes` skill. Build **one version**, `build/a`, in the
 **Living Diagram** direction (build.md §1): write its DIRECTION.md for this topic, then scaffold →
 `starter.mjs` (a renderable baseline to replace scene by scene) → direction.js → scenes → cues.json →
-`mix.mjs` → `render.mjs`. Review the contact sheet against the checklist in build.md and fix once. Present
+`mix.mjs` → `render.mjs`. Every scene builds on `assets/design.js` (one type scale, standard object sizes, a
+row grid, step flows for explanations — build.md §1 Design system); build one explanation scene and the CTA
+first and show their frames before the rest. Review the contact sheet against the checklist in build.md and fix once. Present
 `out/a.mp4`, its contact sheet and one paragraph on how the direction plays out. **Wait for approval** (or
 fixes).
 
