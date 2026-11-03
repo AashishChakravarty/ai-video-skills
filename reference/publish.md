@@ -6,9 +6,10 @@
 node ~/.claude/skills/ai-video-skills/scripts/publish.mjs a --cover-at 1.4
 ```
 
-It copies the picked render, renders the no-subtitle copy if missing, adds the 16:9 cut when
-`out/a-16x9.mp4` exists, writes `captions.srt` / `.vtt`, grabs the covers, length-checks `captions.md`,
-probes every video and prints a table plus a TO FIX list. Run it again after fixing anything.
+It copies the picked render, renders the no-subtitle copies if missing (9:16, and 16:9 when
+`out/a-16x9.mp4` exists), adds the 16:9 cut, writes `captions.srt` / `.vtt`, grabs the covers from the
+no-subtitle copies (a cover never shows a caption), length-checks `captions.md`, probes every video and prints
+a table plus a TO FIX list. Run it again after fixing anything.
 Pick `--cover-at` from a moment with the hook's biggest text on screen (check the contact sheet); it is
 the cover on profile grids and the Shorts shelf.
 
@@ -21,10 +22,8 @@ the cover on profile grids and the Shorts shelf.
 | TikTok | `<slug>-9x16.mp4` | |
 | Facebook Reels | `<slug>-9x16.mp4` | |
 | LinkedIn | `<slug>-9x16.mp4` (autoplay is muted, so burned-in captions help) | |
-| YouTube (long-form) | `<slug>-16x9.mp4` | captions.srt, cover-16x9.jpg as the thumbnail |
+| YouTube (long-form) | `<slug>-16x9-nosubs.mp4` + captions.srt (or `<slug>-16x9.mp4` with burned-in captions) | cover-16x9.jpg as the thumbnail |
 | Anywhere you add captions yourself | `<slug>-9x16-nosubs.mp4` | captions.srt |
-
-For a clean 16:9 upload with the SRT instead of burned-in captions: `node render.mjs a-16x9 --nosubs`.
 
 ## captions.md
 
@@ -38,8 +37,11 @@ How to write them, and why:
   not its exact words (the video already says it).
 - **Language**: match the audience of the voice-over, but keep technical keywords in English — people
   search "elixir concurrency". For a Hindi reel, Hinglish (Roman-script Hindi + English terms) reads best.
-- **Value in 2–4 short lines**: the 3 takeaways from the script. Then the CTA with the reel's handle (`reel.json → handle`)
-  ("Follow @yourhandle — next: GenServer in 60s"), plus "Save this" on Instagram.
+- **Instagram, TikTok and Facebook are teasers, not the story** (users asked for the full-story caption to be cut):
+  the hook line, one line with the shock number, a pull to watch ("asli twist video ke end mein hai"), a comment
+  question, the follow line with the reel's handle (`reel.json → handle`), the hashtags — about 300–450
+  characters. Never give away the twist; the video does that.
+- **YouTube Shorts and YouTube carry the value**: the 2–4 takeaways from the script, then the follow line.
 - **Hashtags**: 3–5 specific ones (topic, language/framework, #programming or #coding, and one audience tag
   such as #codinginhindi for a Hindi reel). Specific beats generic.
 - **YouTube**: keyword-first title ("Elixir Concurrency in 50 Seconds — 2M connections on 1 server"); the
@@ -56,10 +58,12 @@ Template:
 
 ## Instagram
 <hook line>
-<takeaway 1>
-<takeaway 2>
-<takeaway 3>
-Follow @yourhandle — next: <next topic>. Save this for later.
+
+<the shock number in one line>. <a pull to watch, without giving away the twist>
+
+<a comment question> 👇
+<the follow line with @yourhandle>
+
 #tag1 #tag2 #tag3 #tag4
 
 ## YouTube Shorts

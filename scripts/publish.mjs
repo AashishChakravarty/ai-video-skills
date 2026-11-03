@@ -3,7 +3,9 @@
  *   <slug>-9x16.mp4          the reel (Instagram Reels, YouTube Shorts, TikTok, Facebook Reels, LinkedIn)
  *   <slug>-9x16-nosubs.mp4   same without burned-in captions (rendered here if out/<v>-nosubs.mp4 is missing)
  *   <slug>-16x9.mp4          the landscape cut, when out/<v>-16x9.mp4 exists
- *   captions.srt / .vtt      subtitle uploads; cover-9x16.png and cover-16x9.jpg (1280x720)
+ *   <slug>-16x9-nosubs.mp4   the landscape cut without burned-in captions (rendered here when missing)
+ *   captions.srt / .vtt      subtitle uploads; cover-9x16.png and cover-16x9.jpg (1280x720), both taken from the
+ *                            no-subtitle copies so covers never carry a caption
  *   captions.md              per-platform copy written from reference/publish.md (length-checked here)
  *
  *   node publish.mjs <version> [--cover-at 1.5] [--cover16-at 1.5] [--skip-nosubs] [--reel dir]
@@ -25,9 +27,10 @@ const slug = r.reel.slug, pub = (name) => r.file('publish', name), outFile = (na
 mkdirSync(r.file('publish'), { recursive: true });
 
 if (!existsSync(outFile(`${version}.mp4`))) throw new Error(`out/${version}.mp4 missing; run node render.mjs ${version}`);
-if (!existsSync(outFile(`${version}-nosubs.mp4`)) && !opt['skip-nosubs']) {
-  const s = spawnSync(process.execPath, [path.join(SKILL, 'scripts/render.mjs'), version, '--nosubs', '--skip-check', '--reel', r.dir], { stdio: 'inherit' });
-  if (s.status !== 0) throw new Error('no-subtitle render failed');
+for (const v of [version, `${version}-16x9`]) {
+  if (opt['skip-nosubs'] || !existsSync(outFile(`${v}.mp4`)) || existsSync(outFile(`${v}-nosubs.mp4`))) continue;
+  const s = spawnSync(process.execPath, [path.join(SKILL, 'scripts/render.mjs'), v, '--nosubs', '--skip-check', '--reel', r.dir], { stdio: 'inherit' });
+  if (s.status !== 0) throw new Error(`no-subtitle render of ${v} failed`);
 }
 
 const files = [];
@@ -40,6 +43,8 @@ const copy = (src, name) => {
 copy(outFile(`${version}.mp4`), `${slug}-9x16.mp4`);
 copy(outFile(`${version}-nosubs.mp4`), `${slug}-9x16-nosubs.mp4`);
 const has16 = copy(outFile(`${version}-16x9.mp4`), `${slug}-16x9.mp4`);
+copy(outFile(`${version}-16x9-nosubs.mp4`), `${slug}-16x9-nosubs.mp4`);
+const coverSrc = (cut) => (existsSync(pub(`${slug}-${cut}-nosubs.mp4`)) ? pub(`${slug}-${cut}-nosubs.mp4`) : pub(`${slug}-${cut}.mp4`));
 
 const words = readJson(r.file('words.json'));
 writeSubtitles(words.words, pub('captions'));
@@ -47,10 +52,10 @@ files.push('captions.srt', 'captions.vtt');
 
 const firstBeat = readJson(r.file('anchors.json'))[0]?.t ?? 0;
 const coverAt = Number(opt['cover-at'] ?? firstBeat + 0.8);
-ffmpeg(['-ss', coverAt, '-i', pub(`${slug}-9x16.mp4`), '-frames:v', '1', pub('cover-9x16.png')]);
+ffmpeg(['-ss', coverAt, '-i', coverSrc('9x16'), '-frames:v', '1', pub('cover-9x16.png')]);
 files.push('cover-9x16.png');
 if (has16) {
-  ffmpeg(['-ss', Number(opt['cover16-at'] ?? coverAt), '-i', pub(`${slug}-16x9.mp4`), '-frames:v', '1', '-vf', 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720', '-q:v', '2', pub('cover-16x9.jpg')]);
+  ffmpeg(['-ss', Number(opt['cover16-at'] ?? coverAt), '-i', coverSrc('16x9'), '-frames:v', '1', '-vf', 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720', '-q:v', '2', pub('cover-16x9.jpg')]);
   files.push('cover-16x9.jpg');
 }
 

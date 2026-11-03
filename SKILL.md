@@ -48,7 +48,8 @@ creates one, `theme.mjs default <name>` makes it the default.
 ## Stage 1–2 — research and script → Gate 1
 
 Read `reference/script.md`, then research (with sources) into `research.md` and write `script.md` in its
-voice (§Voice and rhythm; the alert arc for news). When the user hands you their own draft, keep its words
+voice (§Voice and rhythm): a hook that talks to the viewer, the concept as an everyday picture before any news or
+number, connected sentences a local voice reads without stopping; the alert arc only for news the viewer acts on. When the user hands you their own draft, keep its words
 and rhythm and change only the facts, the writing system (Devanagari for Hindi) and the format. When the
 config's `audioTags` is true, pause tags stay rare and an emotion tag marks each change of feeling (script.md §Audio tags).
 
@@ -77,7 +78,9 @@ adds a plain copy for other platforms) and ask in one question how to create the
 4. **Record it themselves** — reading the plain block.
 
 For 2–4, wait for the file (whole reel or one per scene) and import it with `tts.mjs --engine file`.
-**Wait for approval of `audio/vo.wav`**; re-take single scenes on request (`--scene`). A mispronounced word
+Show the per-scene report tts.mjs prints (lengths, stalls cut, pauses) with the voice, and offer to save a
+measured speaking rate or a picked speed to the config. **Wait for approval of `audio/vo.wav`**; re-take single
+scenes on request (`--scene`, another `--seed` for a stop or an over-stressed word). A mispronounced word
 is fixed with `pronounce.mjs set word=respelling`, then a re-take of the scenes that use it; a wrong accent
 overall is a voice choice (another voice, or `--instruct "indian accent"` on VoiceStudio). Record `gates.audio`.
 
@@ -110,7 +113,7 @@ Record `gates.version` and `picked` (`a` when there is one version).
 ## Stage 6 — 16:9 cut and publish pack
 
 Build the 16:9 cut of the picked version (build.md §11), write `publish/captions.md` from
-`reference/publish.md`, then `node $S/publish.mjs <v> --cover-at <s>`. Fix its TO FIX list, and finish
+`reference/publish.md` (Instagram, TikTok and Facebook as short teasers), then `node $S/publish.mjs <v> --cover-at <s>`. Fix its TO FIX list, and finish
 with the file list, what to upload where, and the Instagram + YouTube Shorts captions inline.
 
 ## Working agreements

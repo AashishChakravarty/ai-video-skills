@@ -4,10 +4,12 @@
  * and chip helpers that only take type-scale kinds, line icons (hacker with a hat, user, laptop, container, signer,
  * key, contract, wallets), icon boxes, vertical step flows (flowRow + flowLink), a terminal window with small mono
  * text, a map pin, and the low-level DOM/SVG helpers. Exposed as window.Design; load after reel-kit.js. A version's
- * own assets/diagram.js adds its topic objects (hero card, safe, ...) on top of it.
+ * own assets/diagram.js adds its topic objects (hero card, safe, ...) on top of it. The grid, the default text centre
+ * (CX) and the flow positions follow the reel's format, so a scene that reads them re-lays itself for the 16:9 cut.
  */
 (function () {
   const K = window.ReelKit, { REEL, TAU, rgba, clamp, lerp } = K, C = REEL.palette;
+  const LAND = REEL.format === "landscape", CX = K.L.W / 2;
   const SVGNS = "http://www.w3.org/2000/svg";
   const px = (v) => `${v}px`;
 
@@ -57,7 +59,7 @@
    * A single line of text centred on x whose capitals are centred on cy. Font sizes are in px; mono picks
    * Reel Mono. Returns the element (opacity 0 until the scene poses it); its transform origin is the cap centre.
    */
-  function line(parent, id, str, { x = 540, cy, size, mono = false, color = C.white, w = 980, align = "center", ls = "0px" }) {
+  function line(parent, id, str, { x = CX, cy, size, mono = false, color = C.white, w = 980, align = "center", ls = "0px" }) {
     const top = cy - (mono ? CAP_MID.mono : CAP_MID.sans) * size;
     const n = mk(parent, "div", id, {
       left: px(x - w / 2), top: px(top), width: px(w), textAlign: align, fontSize: px(size), lineHeight: "1",
@@ -84,7 +86,7 @@
   }
 
   /** A white rubber stamp (thick border, big caps) centred on (x, cy), tilted by the scene; returns the element. */
-  function stamp(parent, id, str, { x = 540, cy, size = T.stamp.size, w = 760, color = C.white }) {
+  function stamp(parent, id, str, { x = CX, cy, size = T.stamp.size, w = 760, color = C.white }) {
     const h = Math.round(size * 1.3);
     const n = mk(parent, "div", id, {
       left: px(x - w / 2), top: px(cy - h / 2), width: px(w), height: px(h), boxSizing: "border-box",
@@ -140,8 +142,13 @@
   /** A slow ±1 breathing value at frame f, for glows that should not pop between scenes. */
   const breath = (f) => Math.sin(f * 0.12);
 
-  /** Layout grid (canvas px): the title row, four stage rows 180 apart, two columns and the note row above the captions. */
-  const GRID = { title: 470, rows: [640, 820, 1000, 1180], colL: 300, colR: 780, note: 1300, gap: 24 };
+  /**
+   * Layout grid (canvas px) for the reel's format: the title row, the stage rows, two columns, the rows of a three-step
+   * vertical flow and the note row above the captions. Portrait 1080 × 1920; landscape 1920 × 1080 (content y 220–850).
+   */
+  const GRID = LAND
+    ? { title: 270, rows: [400, 560, 720], colL: 640, colR: 1280, flow: [390, 585, 780], note: 810, gap: 24 }
+    : { title: 470, rows: [640, 820, 1000, 1180], colL: 300, colR: 780, flow: [680, 900, 1120], note: 1300, gap: 24 };
 
   /**
    * Type scale: every word on screen uses one of these kinds, so sizes match from scene to scene. Sizes are canvas
@@ -157,7 +164,7 @@
   };
 
   /** A line of text in one type-scale kind: left-aligned from `left` when given, else centred on x. */
-  function text(parent, id, str, { kind = "label", x = 540, left = null, cy, color = C.white, w = 900 }) {
+  function text(parent, id, str, { kind = "label", x = CX, left = null, cy, color = C.white, w = 900 }) {
     const k = T[kind];
     return left != null
       ? line(parent, id, str, { x: left + w / 2, cy, size: k.size, mono: k.mono, color, w, align: "left" })
@@ -213,7 +220,7 @@
     },
   };
 
-  const ICON = 132, FLOW_X = 300, FLOW_TEXT = 400;
+  const ICON = 132, FLOW_X = LAND ? 560 : 300, FLOW_TEXT = FLOW_X + 100;
 
   /** An icon in its 132 px rounded box centred on (x, y) (a flow step's box, or a stand-alone icon). Returns the box element. */
   function iconBox(parent, id, icon, { x, y }) {
@@ -272,7 +279,7 @@
    * kind typed on character by character. lines = [[[text, colour], …], …]. Returns
    * { el, chars, set({ alpha, s, typed, caret, glow }) } where chars is the total character count.
    */
-  function terminal(parent, id, { x = 540, cy, w = 940, h = 380, title = "monitor.log", lines }) {
+  function terminal(parent, id, { x = CX, cy, w = 940, h = 380, title = "monitor.log", lines }) {
     const o = mk(parent, "div", id, {
       left: px(x - w / 2), top: px(cy - h / 2), width: px(w), height: px(h), borderRadius: "26px", border: `4px solid ${rgba(C.text, 0.6)}`,
       boxSizing: "border-box", background: rgba(C.bg, 0.97), overflow: "hidden", opacity: "0", transformOrigin: "50% 50%",
@@ -329,7 +336,7 @@
   }
 
   window.Design = {
-    C, CAP_MID, GRID, T, mk, attrs, svgAt, mix, pose, line, chip, stamp, wire, ring, logoSvg, num, bez, breath,
+    C, CX, CAP_MID, GRID, T, mk, attrs, svgAt, mix, pose, line, chip, stamp, wire, ring, logoSvg, num, bez, breath,
     text, tag, ICONS, ICON, FLOW_X, FLOW_TEXT, iconBox, lightBox, flowRow, flowLink, esc, terminal, mapPin,
   };
 })();

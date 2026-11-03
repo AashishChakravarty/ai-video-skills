@@ -21,7 +21,8 @@ brought to life.
 - **Hero object**: one flat, glowing shape in the accent colour (e.g. a ring-orb with a mono state chip
   inside) stays on screen and changes role scene to scene; around it everything is clean vector lines,
   arrows, chips and mono code labels.
-- **Hook**: a huge card (code, a number, a claim) legible by 0.4 s gets challenged (a stamp slams with a
+- **Hook**: a huge card (code, a number, a claim), on screen from frame 0 (the autoplay preview and the first
+  contact-sheet tile), gets challenged (a stamp slams with a
   camera hit, a counter keeps rolling), a one-word question flashes huge, and the card collapses into the
   hero object as its name is spoken.
 - **Motion**: one continuous camera; the diagram keeps building in the same space. Strokes draw on
@@ -52,8 +53,10 @@ of the frame, so neighbouring scenes draw the same object on the same frame and 
 - **Standard object sizes**: each object (hero card, safe, key, signature, node, icon box 132 px) has one scale
   used in every scene, so things read as one family; keep them in diagram.js (`SIZE`). A small object inside a
   bigger one is centred in it and clearly smaller (the Binance key box: 0.32 inside a 0.85 card).
-- **Grid and spacing**: title row y 470, stage rows 640 / 820 / 1000 / 1180, columns x 300 / 780, note row 1300;
-  ≥ 24 px between any two boxes. When a spot is needed again, the old element fades out before the new one
+- **Grid and spacing**: read positions from `GRID` and `CX`, which follow the format. Portrait: title row y 470,
+  stage rows 640 / 820 / 1000 / 1180, columns x 300 / 780, flow rows 680 / 900 / 1120, note row 1300. Landscape:
+  title 270, rows 400 / 560 / 720, columns 640 / 1280, flow rows 390 / 585 / 780, note 810. Keep ≥ 24 px between
+  any two boxes. When a spot is needed again, the old element fades out before the new one
   fades in. Never shrink a crowded scene with `camera.scale` — re-lay it out on the grid.
 - **Explain with flows**: how-it-works scenes are vertical step flows (`flowRow` + `flowLink`, one step per
   spoken name, the active step lit) or two-column comparisons; code and alerts go in a large `terminal` with
@@ -173,7 +176,9 @@ them up with the clip's geometry (both use canvas pixels).
 - A caption or label that changes must fade out before the next fades in — never cross-fade text.
 - Objects leaving upward pass through the header: fade them over ~5 frames before they reach y 440.
 - Nothing scrolls sideways as a marquee — no running ticker, header or footer; text holds still and swaps in place.
-- Text on screen for less than ~0.5 s gets flagged by `check` and is unreadable; hold it to the next beat.
+- Text must stay on screen long enough to read: `check` (craft `line_unread`) wants about 0.5 s + 0.3 s per word,
+  at least 1.5 s for a line of 4–5 words. A note row that swaps on every beat fails this; start the line on an
+  earlier spoken word or shorten it ("PRICE = HOPE" instead of "THE PRICE GROWS ON HOPE").
 - Deterministic only: `K.rng(seed)` / `K.hash(...)`, never `Math.random()` or `Date`.
 - Search `/hyperframes-registry` before hand-building a named effect (headline slam, number wheel,
   scramble reveal, strikethrough, success check and karaoke captions are already in compositions/components).
@@ -183,8 +188,9 @@ them up with the clip's geometry (both use canvas pixels).
 1. `render.mjs` printed check passed, frames = `reel.json audio.frames`, audio ≈ −14 LUFS.
 2. Read `out/<v>-contact.png`: header, footer and a moving background in every tile; no tile without a
    new element for more than 2 tiles in a row; scene text never touches the captions band or header.
-3. Snapshot the hand-offs (`npx hyperframes snapshot --at <t1>,<t2>` in build/<v>) and look at them.
-4. Hook: something large and legible by 0.5 s.
+3. Snapshot the hand-offs (`npx hyperframes snapshot --at <t1>,<t2> --output ../../out/preview/<name>` in build/<v>)
+   and look at them. Frames go to `out/preview/` so the user can open them; the default `.hyperframes/` is hidden.
+4. Hook: something large and legible at frame 0 — the first tile of the contact sheet must not be empty.
 5. Design system: `grep -nE "fontSize|font-size|size: [0-9]" compositions/scene-*.html` prints nothing; the same
    object is the same size in every tile; no two elements overlap or touch (≥ 24 px); `check` reports no
    `content_overlap` or `text_below_floor` in any scene.
@@ -201,13 +207,16 @@ ask for fixes, or ask to merge ideas. Record `gates.version` and `reel.json → 
 
 ```bash
 node $S/scaffold.mjs a-16x9 --from a          # copies scenes, direction and hosts; resizes host attributes
-# re-lay every scene for K.L (landscape): wider, shorter; move text into x 120–1800, y 220–850
+# re-lay every scene for K.L (landscape): wider, shorter; move text into x 120–1800, y 220–850. Text, chips and
+# flows that read GRID / CX / FLOW_X move by themselves; re-pose the hero objects (diagram.js POS) and any literal x/y
 # 3D: set clips.json to 1920×1080, re-place props, node render-clips.mjs --out ../assets/clips (inside build/a-16x9/remotion)
 cp build/a/cues.json build/a-16x9/ && node $S/mix.mjs a-16x9 && node $S/render.mjs a-16x9
 ```
 
-Captions, header (FOLLOW pill instead of a footer), ticker and progress re-lay themselves. Snapshot and
-review it like §9 before publishing.
+Captions, header (FOLLOW pill instead of a footer), ticker and progress re-lay themselves. The landscape chrome has
+no flying FOLLOW footer, so the CTA scene adds its own "FOLLOW @handle" line under its lockup. A vertical flow fits
+three steps at `GRID.flow`; a longer flow goes horizontal (boxes in a row, labels under them). Put the hero on the
+left and its numbers and chips in a right-hand column. Snapshot and review it like §9 before publishing.
 
 ## 12. Troubleshooting
 

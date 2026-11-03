@@ -11,12 +11,15 @@
  *   node tts.mjs --engine file --scene hook --input hook.mp3      (one scene; stitches once all scenes have takes)
  *   node tts.mjs --engine voicestudio|say --voices
  *
- * --sample renders only the opening sentence to audio/samples/ for picking a voice; --scene re-takes
- * just those scenes and re-stitches. --tail pads silence after the last word so the end card can hold. VoiceStudio is the local OmniVoice app (opened if not running);
- * a --voice that is an audio file clones that voice on the fly (VoiceStudio and Chatterbox).
+ * --sample renders only the opening sentence to audio/samples/<engine>-<voice>[-<instruct>]-x<speed>-s<seed>.wav for
+ * picking a voice; --scene re-takes just those scenes and re-stitches. --tail pads silence after the last word so the
+ * end card can hold. --speed defaults to the config's tts.speed. VoiceStudio is the local OmniVoice app (opened if not
+ * running); a --voice that is an audio file clones that voice on the fly (VoiceStudio and Chatterbox).
+ * Stitching cuts a take's leading stall (a faint breath, then a pause before the first word), prints each scene's
+ * length and its pauses of 0.3 s or more, and the measured speaking rate against the config's wordsPerSecond.
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { CONFIG, SKILL, exaggerationFor, ffmpeg, forEngine, loadPronounce, loadReel, loudness, normalize, parseVo, probeDuration, run, speakable } from './lib.mjs';
@@ -28,7 +31,7 @@ const { values: opt } = parseArgs({
     sample: { type: 'boolean' },
     scene: { type: 'string', multiple: true },
     input: { type: 'string' },
-    speed: { type: 'string', default: '1' },
+    speed: { type: 'string', default: String(CONFIG.tts.speed ?? 1) },
     seed: { type: 'string', default: '7' },
     quality: { type: 'string', default: '16' },
     instruct: { type: 'string' },
@@ -185,11 +188,55 @@ async function render(raw) {
   }
 }
 
+/** Silences of at least `min` seconds in an audio file (below -38 dB), as [start, end] pairs in seconds. */
+function silences(file, min) {
+  const err = spawnSync('ffmpeg', ['-hide_banner', '-i', file, '-af', `silencedetect=noise=-38dB:d=${min}`, '-f', 'null', '-'], { encoding: 'utf8' }).stderr;
+  const ends = [...err.matchAll(/silence_end: ([\d.]+)/g)].map((m) => Number(m[1]));
+  return [...err.matchAll(/silence_start: (-?[\d.]+)/g)].map((m, i) => [Math.max(0, Number(m[1])), ends[i] ?? probeDuration(file)]);
+}
+
+/** Peak level (dBFS) of the first `secs` seconds of a file. */
+function peakDb(file, secs) {
+  const err = spawnSync('ffmpeg', ['-hide_banner', '-t', String(secs), '-i', file, '-af', 'volumedetect', '-f', 'null', '-'], { encoding: 'utf8' }).stderr;
+  return Number(err.match(/max_volume: (-?[\d.]+) dB/)?.[1] ?? -99);
+}
+
+/**
+ * Cuts a take's leading stall: a faint breath or click, then a pause before the first word. The edge trim keeps it
+ * because the breath is louder than its threshold, and stitched between scenes it sounds like a stop. Only sound
+ * quieter than -30 dB counts as a breath, so a short spoken word followed by a pause is never cut. Returns the cut.
+ */
+function trimLeadingStall(file) {
+  const lead = silences(file, 0.25).find(([s, e]) => s < 0.5 && e < 1.5);
+  if (!lead || (lead[0] > 0.02 && peakDb(file, lead[0]) > -30)) return 0;
+  const cut = Math.max(0, lead[1] - 0.04), tmp = file.replace(/\.wav$/, '.trim.wav');
+  ffmpeg(['-ss', cut.toFixed(3), '-i', file, '-af', 'afade=t=in:d=0.03', tmp]);
+  renameSync(tmp, file);
+  return cut;
+}
+
+/** Prints each scene's length, any stall cut and its inner pauses, then the speaking rate against wordsPerSecond. */
+function reportTakes(scenes, takes) {
+  let words = 0, speech = 0;
+  scenes.forEach((s, i) => {
+    const cut = trimLeadingStall(takes[i]), d = probeDuration(takes[i]);
+    const inner = silences(takes[i], 0.3).filter(([a, b]) => a > 0.05 && b < d - 0.05);
+    words += s.text.replace(/\[[^\]]*\]/g, ' ').split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+    speech += d;
+    const notes = [cut ? `cut a ${cut.toFixed(2)}s stall before the first word` : '', inner.length ? `pauses ${inner.map(([a, b]) => `${a.toFixed(2)}–${b.toFixed(2)}s`).join(', ')}` : ''].filter(Boolean);
+    console.log(`  [${s.id}] ${d.toFixed(2)}s${notes.length ? ` · ${notes.join(' · ')}` : ''}`);
+  });
+  const rate = words / speech, set = CONFIG.wordsPerSecond;
+  console.log(`speaking rate ${rate.toFixed(2)} words/s (config wordsPerSecond ${set})${Math.abs(rate - set) > 0.2 ? `: node config.mjs set wordsPerSecond=${rate.toFixed(2)} makes script.mjs estimates match this voice` : ''}`);
+  console.log('a pause of 0.3 s or more inside a scene sounds like a stop; if one is unwanted, re-take that scene with another --seed');
+}
+
 /** Trims each take's edge silence, joins them with --gap seconds between scenes and normalises to -16 LUFS. */
 function stitch(scenes) {
   const takes = scenes.map((s) => r.file(`audio/takes/${s.id}.wav`));
   const missing = takes.filter((t) => !existsSync(t));
   if (missing.length) throw new Error(`missing takes: ${missing.map((m) => path.basename(m)).join(', ')}; render them with --scene`);
+  reportTakes(scenes, takes);
   const trim = 'silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse';
   const parts = takes.map((_, i) => `[${i}:a]aresample=48000,aformat=channel_layouts=mono,${trim}[t${i}]`);
   const chain = takes.map((_, i) => `[t${i}]${i < takes.length - 1 ? `[g${i}]` : ''}`).join('');
@@ -255,7 +302,8 @@ if (opt.sample) {
   const sentences = scenes[0].text.match(/[^।?!]+[।?!]*/gu) ?? [scenes[0].text];
   let first = '';
   for (const s of sentences) if (first.split(/\s+/).filter(Boolean).length < 10) first += s;
-  const out = r.file(`audio/samples/${opt.engine}-${slug(opt.voice && path.basename(opt.voice))}${instruct ? `-${slug(instruct)}` : ''}.wav`);
+  const out = r.file(`audio/samples/${opt.engine}-${slug(opt.voice && path.basename(opt.voice))}${instruct ? `-${slug(instruct)}` : ''}-x${opt.speed}-s${opt.seed}.wav`);
+  mkdirSync(path.dirname(out), { recursive: true });
   await render([{ id: 'sample', text: speakable(first.trim(), pron), out }]);
   console.log(`sample: ${out} (${probeDuration(out).toFixed(2)}s)`);
   process.exit(0);

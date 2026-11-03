@@ -48,7 +48,7 @@ cues.json instead (mix.mjs).
 
 ```bash
 node tts.mjs --engine voicestudio --voices                 # saved VoiceStudio voices (ids)
-node tts.mjs --engine voicestudio --voice <id> --sample    # opening sentence → audio/samples/
+node tts.mjs --engine voicestudio --voice <id> --sample    # opening sentence → audio/samples/…-x<speed>-s<seed>.wav
 node tts.mjs --engine chatterbox --voice me.wav --sample   # clone any recording
 node tts.mjs --engine voicestudio --voice <id>             # all scenes → audio/takes/*.wav → audio/vo.wav
 node tts.mjs --engine voicestudio --voice <id> --scene processes   # re-take one scene, re-stitch
@@ -56,7 +56,8 @@ node tts.mjs --engine file --input ~/Downloads/eleven.mp3     # import a whole-r
 node tts.mjs --engine file --scene hook --input hook.mp3     # or one file per scene
 ```
 
-Options: `--speed 1.05` (slightly faster reads better on reels), `--seed 7` (same seed = same take),
+Options: `--speed 1.05` (slightly faster reads better on reels; the default is the config's `tts.speed`, so save a
+picked speed with `config.mjs set tts.speed=1.05`), `--seed 7` (same seed = same take),
 `--quality 32` (VoiceStudio diffusion steps: 8 draft, 16 default, 32 best), `--instruct "indian accent"`
 (VoiceStudio voice-design attributes, also applied on top of a cloned voice: gender, age, pitch, whisper and an
 accent — american, british, australian, canadian, indian, chinese, japanese, korean, portuguese, russian),
@@ -71,6 +72,13 @@ How it behaves, so you can explain failures:
   model (`tts/prep_ref.py`) and clones from that. The prepared reference is cached in `audio/refs/`.
 - Each scene is a separate take, trimmed of edge silence and joined with `--gap`; the result is normalised
   to −16 LUFS mono 48 kHz. reel.json gets `audio = { vo, duration, frames }`.
+- Before joining, a take that opens with a stall (a faint breath, then a pause before the first word) is cut to
+  its first word: between scenes that stall sounds like the voice stopping. Only sound under −30 dB counts as a
+  breath, so a spoken word is never cut.
+- Every stitch prints each scene's length, any stall it cut, and its pauses of 0.3 s or more, then the speaking
+  rate against `wordsPerSecond`. Inner pauses at commas are normal; several per scene, or one in the middle of
+  a phrase, is what users hear as "too many stops" — re-take that scene with another `--seed`. A word said too
+  loud or stressed is also a seed issue: render the scene with 2–3 seeds and keep the evenest.
 
 ## Choosing the voice (gate 2a)
 
@@ -111,8 +119,8 @@ made, `pronounce.mjs set` it and re-take only the scenes that use it with `--sce
 
 ## Gate 2 — audio approval
 
-Give the user `audio/vo.wav` (and the duration vs target). Ask: approve, re-take scenes (which, and what to
-fix), switch voice, or use their own recording. Record `gates.audio` in reel.json when approved.
+Give the user `audio/vo.wav`, the duration vs target and the per-scene report from tts.mjs (lengths and pauses).
+Ask: approve, re-take scenes (which, and what to fix), switch voice, or use their own recording. Record `gates.audio` in reel.json when approved.
 
 ## Words (stage 4, no gate)
 

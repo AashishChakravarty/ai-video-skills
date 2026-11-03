@@ -19,6 +19,11 @@ The script decides whether the reel works; the build only amplifies it. Spend th
    - **Contradiction**: "Threads are slow. Processes are faster." (violates an expectation)
    - **Stakes**: "This one bug could take down 70% of the internet."
    - **Before/after**: show the painful way, then the one-line way.
+   - **Viewer stake**: "अगर तुम भी AI shares में पैसा लगा रहे हो, तो रुको, पहले देखो China में क्या हुआ।" (talks to
+     the viewer about their own money, code or job)
+
+   Talk to the viewer; don't report to them. A hook that relays news ("…और सत्रह दिन बाद ख़बर आई कि…") sounds
+   like a bulletin and viewers asked for it to be redone; the news belongs in scene 2, after the viewer cares.
 
 ## Script → `script.md`
 
@@ -29,9 +34,21 @@ Use the template new-reel.mjs created. Its header carries the voice-over languag
 |---|---|---|
 | S1 hook | stop the scroll in the first 3 s, pose the question | 8–12 s |
 | S2–S4 | one idea per scene, each answering the last scene's question | 8–12 s each |
-| S5 CTA | recap in one line, tease the next video, ask for the follow | 6–10 s |
+| S5 CTA | recap in one line (the lesson), then the follow line | 6–10 s |
 
-For news (security bugs, releases, outages) use the alert arc instead. It runs 60–90 s because every scene
+For news the viewer cannot act on (markets, policy, a company's crash or funding round), keep the explainer
+structure and teach the concept before the news — the numbers mean nothing until the idea is clear:
+
+| Scene | Job | Example (China AI bubble, Hindi) |
+|---|---|---|
+| hook | the viewer's stake, then the event in one line | "अगर तुम भी AI shares में पैसा लगा रहे हो, तो रुको, पहले देखो China में क्या हुआ…" |
+| concept | the idea as an everyday picture, before any number | "जब दस लाख का plot लोग एक करोड़ में ख़रीदने लगें, ये सोच के कि कल अच्छा profit होगा…" |
+| what | what happened, with the 1–2 numbers that matter | "…चार महीने में forty percent गिर गए, यानी चालीस लाख करोड़ रुपये से भी ज़्यादा डूब गए।" |
+| why | the causes in plain words, one sentence | "shares की कीमतें कमाई से बहुत आगे निकल गई थीं, ऊपर से…" |
+| twist | what makes it surprising | "मज़े की बात, सरकार ख़ुद पैसा लगाना बंद नहीं कर रही…" |
+| cta | the lesson in one line, then the follow line | "AI की technology असली है, पर हर AI share की कीमत नहीं।" |
+
+For news the viewer acts on (security bugs, releases, outages) use the alert arc instead. It runs 60–90 s because every scene
 carries a fact the viewer acts on:
 
 | Scene | Job | Example (PHP2Shell, Hindi) |
@@ -52,11 +69,20 @@ Write for the ear, like someone who knows the subject explaining it to a friend 
   ("दो CVEs। दोनों nine point two।") sounds like a news bulletin, not an explanation.
 - Explain each mechanism with an everyday picture first, then name the term: a hot wallet is the exchange's
   cash counter, the cold wallet its तिजोरी, an EIP-7702 delegation a power of attorney.
-- Punctuation carries the rhythm (`।` `,` `?` `...`). A pause tag goes only before a real reveal — about one
-  per scene at most, never at a scene's start (scenes already get a gap between them).
+- Explain before you report: a viewer who has not understood the idea cannot follow the numbers. Give the
+  concept its own scene before the news.
+- Plain words in the voice, jargon on screen: say "बड़ी AI और chip companies", show "STAR50"; say "पाबंदियाँ",
+  show "US CHIP CURBS". Big money the way the audience counts it: "चालीस लाख करोड़ रुपये" next to "$480B" on
+  screen (keep the exchange-rate source in research.md).
+- Punctuation carries the rhythm (`।` `,` `?`). Local voices (VoiceStudio, Chatterbox) stop at every `।`, `...` and
+  pause tag, so for them write each scene as one or two connected sentences joined with commas, and never use
+  `...`. A pause tag goes only where the user wants a pause, or before a real reveal — about one per scene at
+  most, never at a scene's start (scenes already get a gap between them).
 - Turn a section with a one-word question ("Result?", "कैसे?") or an instruction that pulls the viewer in
   ("Trick समझो।").
-- Names go one per sentence and end on a closer: "WordPress। Drupal। Joomla। Wikipedia। सब कुछ।"
+- Names go one per sentence and end on a closer: "WordPress। Drupal। Joomla। Wikipedia। सब कुछ।" This roll-call
+  only works on ElevenLabs; a local voice makes it stop-start ("Moore Threads, आधी। MetaX, आधी।" was redone), so
+  there say the names in one sentence or leave them on screen.
 - "Not needed" pairs land harder than a list of requirements: "ना login चाहिए। ना आपके app में कोई bug चाहिए।"
 - Exact beats vague: the real version numbers, the real setting, the real tool. Viewers act on specifics.
 
@@ -67,10 +93,11 @@ Rules, and why:
 - **`VO:` is the exact narration** in the configured language — the single source for the voice, the
   subtitles and the timings. Write it the way it will be said: numbers as spoken words when the voice must
   say them, tech terms in the form the audience uses. Never digits: voices misread "8.5.12" and "70%", so
-  write "eight point five point twelve" (`script.mjs vo` lists any numerals left). Use `...`, sentence
-  punctuation and pause tags for pauses — they become breaths in TTS and pause anchors in alignment.
+  write "eight point five point twelve" (`script.mjs vo` lists any numerals left). Sentence punctuation and the
+  rare pause tag make the pauses — they become breaths in TTS and pause anchors in alignment.
 - **Length**: `node script.mjs vo` estimates each scene from `wordsPerSecond` in the config (about 2.5 for
-  English, 2.35 for Hindi); trim if over target.
+  English, 2.35 for Hindi); trim if over target. A fast local voice reads quicker (VoiceStudio at 1.05× ran
+  3.1 words/s in Hindi); `tts.mjs` prints the measured rate after each render with the command to save it.
 - **Beats** are lines starting with `- @word:` — the on-screen event that fires as that word is spoken.
   `@word` matches the next occurrence in that scene (punctuation/case ignored); `@{two words}` matches a
   phrase. Write `\@name` for a literal @ in on-screen text (the reel's own handle is exempt).
@@ -84,8 +111,9 @@ Rules, and why:
   the reel feel like one continuous shot.
 - **Palette**: bg, accent (from the topic logo), success green, text, white. No red unless you add it to
   the palette on purpose — strikes and crash flashes read fine in white.
-- **CTA scene** ends on the spoken follow line from the config (`cta.spoken`). Before it, an explainer
-  teases the next topic; a news reel gives the action with urgency ("आज ही।").
+- **CTA scene** ends on the spoken follow line from the config (`cta.spoken`). Before it, an explainer gives
+  the lesson in one line (tease a next video only when the user has one planned); a news reel gives the action
+  with urgency ("आज ही।").
 
 ### Language notes
 

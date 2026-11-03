@@ -6,10 +6,11 @@
  *   { "bed": { "key": "A", "mode": "minor", "bpm": 100, "volume": 0.17 } | null,
  *     "music": { "file": "path.mp3", "volume": 0.18 } | null,
  *     "cues": [ { "at": ["hook", "आज"], "offset": 0, "sfx": "impact-bass-1", "vol": 0.55 },
+ *               { "word": "crash", "from": 30, "sfx": "pop", "vol": 0.4 },
  *               { "t": 11.05, "sfx": "riser", "vol": 0.35, "trim": 8.2, "dur": 1.8 } ] }
  *
- * "at" is a script anchor (scene, token[, n]) and "word" ({ "word": "crash", "from": 30 }) the first spoken match after
- * "from" seconds, so cues follow a re-made voice-over; "t" is absolute seconds.
+ * "at" is a script anchor (scene, token[, n]); "word" (with an optional "from" seconds, both flat on the cue) is the
+ * first spoken match after "from", so cues follow a re-made voice-over; "t" is absolute seconds.
  * sfx is a name from the SFX library (node mix.mjs --list; HyperFrames media-use by default, or config sfxDir) or a
  * path to an audio file.
  *
