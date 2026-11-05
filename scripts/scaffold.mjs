@@ -45,7 +45,7 @@ function reelData() {
   const data = {
     format, W, H, fps, frames, duration: words.duration,
     title: r.reel.title, slug: r.reel.slug, handle: r.reel.handle ?? CONFIG.handle,
-    palette: r.reel.palette, background: r.reel.background ?? CONFIG.background,
+    palette: r.reel.palette, background: r.reel.background ?? CONFIG.background, chrome: r.reel.chrome ?? null, cards: r.reel.cards ?? null,
     logo: r.reel.logo ? { title: r.reel.logo.title, path: r.reel.logo.path } : null, channelLogo,
     ticker: r.reel.ticker ?? [], cta: r.reel.cta ?? CONFIG.cta,
     scenes: words.scenes.map(({ id, start, end }) => ({ id, start, end })),

@@ -20,6 +20,7 @@ Rules: animate only from `const f = props.from + useCurrentFrame()` — never `u
 ```
 node render-clips.mjs            # all clips → ../assets/clips/<id>.webm
 node render-clips.mjs --only id  # one clip;  --out <dir> to write elsewhere
+node render-clips.mjs --port 3917 # when something else (e.g. Docker) holds Remotion's port 3000
 ```
 Each file is checked for ALPHA_MODE=1, the exact frame count and size; the line printed also gives its `data-start`.
 

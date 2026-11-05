@@ -95,6 +95,28 @@ Chapters:
 <same as Instagram, hashtags optional>
 ```
 
+## Notes PDF (when the CTA promises a DM)
+
+A "comment KEYWORD" CTA promises a freebie, so make it before posting: a detailed notes document, not a poster.
+
+```bash
+mkdir -p notes && cp ~/.claude/skills/ai-video-skills/templates/notes/notes.html notes/<slug-topic>.html
+# replace the CAPS placeholders and example blocks with the topic, then:
+node ~/.claude/skills/ai-video-skills/scripts/notes.mjs <slug-topic>     # → publish/<slug-topic>.pdf (A4)
+```
+
+- **Readable first**: white pages and dark text (the template); keep gradients and grids for the video.
+- **Depth**: the problem with its numbers, requirements, an architecture diagram, each component in depth, one
+  request end to end, the bottleneck with worked maths, what's changing, a "design it yourself" interview version
+  (API, data model, the core write, trade-offs), myths, interview questions, a glossary and sources. About 10–12 pages.
+- **Honest labels**: every fact gets a numbered source from research.md; anything the company hasn't published
+  is tagged DESIGN MODEL, and example numbers ILLUSTRATIVE.
+- **Evergreen**: a title like "<App> <Feature> Architecture"; no next-part teasers or dated jokes, and no series
+  name. Put the full profile URL (e.g. `https://www.instagram.com/<handle>`) on the cover, in the `@page` footer and
+  in the follow box.
+- The footer lives in `@page` margin boxes; a `position: fixed` footer prints over the content.
+- **Sharing**: Instagram DMs can't carry a PDF, so upload it (Google Drive or similar) and DM the link.
+
 ## Final message to the user
 
 List the publish/ files with one line each (what to upload where), paste the Instagram and YouTube Shorts

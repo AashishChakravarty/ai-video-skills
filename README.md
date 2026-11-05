@@ -104,8 +104,9 @@ node scripts/config.mjs set tts.voicestudioProfile=<id> "tts.instruct=indian acc
 A theme is a named brand and look that new reels reuse: handle, channel, follow text and spoken follow line,
 channel logo, palette, fonts and background. Anything a theme leaves out comes from your settings above. Three
 starter themes ship in [`themes/`](themes): `midnight` (the default: purple night, dot field, accent from the topic),
-`terminal` (green on black with a blueprint grid) and `alert` (near-black, red accent, soft glows; made for security
-news). Your own themes live in your config.
+`terminal` (green on black with a blueprint grid), `alert` (near-black, red accent, soft glows; made for security
+news) and `paper` (light paper fading to lavender, indigo accent, white cards with soft shadows and a card
+header/footer). Your own themes live in your config.
 
 ```bash
 node scripts/theme.mjs                                    # every theme; * marks the default
@@ -149,6 +150,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | `mix.mjs` | voice + pad bed or ducked music + SFX cues → −14 LUFS |
 | `render.mjs`, `contact.mjs`, `compare.mjs` | check + render + contact sheet; side-by-side compare of two versions |
 | `srt.mjs`, `cover.mjs`, `publish.mjs` | subtitles, covers and the verified publish pack |
+| `notes.mjs` | prints the reel's notes document (the "comment KEYWORD" freebie) to an A4 PDF |
 
 ## Layout
 
@@ -156,13 +158,14 @@ The scripts also run on their own (each prints its usage at the top of the file)
 SKILL.md                 workflow and gates (what Claude reads first)
 TESTING.md               setup check, scripts-only pipeline test, full skill test
 config.default.json      default settings (yours live in ~/.config/ai-video-skills/config.json)
-themes/                  starter themes: midnight, terminal, alert
+themes/                  starter themes: midnight, terminal, alert, paper
 reference/               script.md · audio.md · build.md · publish.md — per-stage guides
 scripts/                 the tools above (Node + uv Python)
 pronounce/               starter respellings per voice-over language (hi.json)
 templates/reel/          research.md, script.md, pronounce.json for a new reel
 templates/hyperframes/   master project: living background, chrome, karaoke captions, shared runtime
 templates/remotion/      transparent 3D clip kit (Logo3D, OrthoStage, render-clips.mjs)
+templates/notes/         notes.html: the readable A4 notes document a "comment KEYWORD" CTA promises
 examples/                short English and Hindi scripts for testing
 assets/                  fonts and GSAP copied into every build
 ```

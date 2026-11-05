@@ -14,7 +14,7 @@ or runs from inside the reel folder. The user's settings (handle, channel, langu
 palette, fonts, TTS defaults) live in `~/.config/ai-video-skills/config.json` over the repo's
 `config.default.json`; `node $S/config.mjs` shows them and `node $S/config.mjs set key=value …` changes them.
 Their brand and look can also be saved as named themes (handle, channel, CTA, channel logo, palette, fonts,
-background) that new reels reuse: `node $S/theme.mjs` lists them, `theme.mjs save <name> --from <theme> key=value …`
+background, header/footer style; `paper` is the light starter) that new reels reuse: `node $S/theme.mjs` lists them, `theme.mjs save <name> --from <theme> key=value …`
 creates one, `theme.mjs default <name>` makes it the default.
 
 ## Stage 0 — start or resume
@@ -114,7 +114,9 @@ Record `gates.version` and `picked` (`a` when there is one version).
 
 Build the 16:9 cut of the picked version (build.md §11), write `publish/captions.md` from
 `reference/publish.md` (Instagram, TikTok and Facebook as short teasers), then `node $S/publish.mjs <v> --cover-at <s>`. Fix its TO FIX list, and finish
-with the file list, what to upload where, and the Instagram + YouTube Shorts captions inline.
+with the file list, what to upload where, and the Instagram + YouTube Shorts captions inline. If the CTA promises
+a DM freebie ("comment KEYWORD"), build its notes PDF too (`templates/notes/notes.html` → `notes.mjs`,
+publish.md "Notes PDF").
 
 ## Working agreements
 

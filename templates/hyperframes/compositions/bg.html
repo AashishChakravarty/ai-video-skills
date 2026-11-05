@@ -1,7 +1,8 @@
 <!--
   bg: the living backdrop for the whole reel on one canvas — base colour, two drifting glows, ~1500 twinkling
   dots, vignette and grain — riding the shared camera at 40% depth. The theme's REEL.background picks the style
-  (dots; grid: a drifting blueprint grid with 45% of the dots; glow: stronger glows and no dots) and scales density,
+  (dots; grid: a drifting blueprint grid with 45% of the dots; glow: stronger glows and no dots), an optional
+  gradient (a second colour the base fades to, top-left to bottom-right) and scales density,
   drift, glow, grain (0–1) and vignette; DIRECTION.field.density/drift multiply on top. The dots react to
   DIRECTION.field.events (a glow background has no dots, so only streams and pulse show):
     swarm     {from, to, x, y, w, h, share?, respawn?}  dots stream into a rect, then respawn
@@ -61,7 +62,7 @@
         ctx.fillStyle = color;
         levels.forEach((idx, lv) => {
           if (!idx.length) return;
-          ctx.globalAlpha = (lv + 1) / 5;
+          ctx.globalAlpha = ((lv + 1) / 5) * (K.light ? 0.5 : 1);
           ctx.beginPath();
           for (const i of idx) {
             ctx.moveTo(pts[i] + pts[i + 2], pts[i + 1]);
@@ -72,7 +73,7 @@
         ctx.globalAlpha = 1;
       }
 
-      const COLORS = [C.text, C.accent, C.success, C.white];
+      const COLORS = K.light ? [C.accent, C.accent, C.success, C.accent] : [C.text, C.accent, C.success, C.white];
       const SHARE = { dots: 1, grid: 0.45, glow: 0 }[B.style] ?? 1, GLOW = B.glow * (B.style === "glow" ? 1.8 : 1);
       const COUNT = Math.round(1500 * SHARE * B.density * (field.density ?? 1)), DRIFT = B.drift * (field.drift ?? 1);
       const DOTS = (() => {
@@ -211,28 +212,48 @@
           }
           ctx.stroke();
         }
+        if (!K.light) return;
+        // Blueprint register marks: a small accent "+" on every major crossing.
+        ctx.strokeStyle = rgba(C.accent, 0.4);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = Math.ceil(x0 / (step * 4)) * 4; i * step <= x1; i += 4) {
+          for (let j = Math.ceil((y0 + off) / (step * 4)) * 4; j * step - off <= y1; j += 4) {
+            const x = i * step, y = j * step - off;
+            ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y);
+            ctx.moveTo(x, y - 10); ctx.lineTo(x, y + 10);
+          }
+        }
+        ctx.stroke();
       }
 
       function render(t) {
         const f = Math.round(t * FPS), sec = f / FPS, cam = K.camAt(sec);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.fillStyle = C.bg;
+        let base = C.bg;
+        if (B.gradient) {
+          base = ctx.createLinearGradient(0, 0, W * 0.4, H);
+          base.addColorStop(0, C.bg);
+          base.addColorStop(1, B.gradient);
+        }
+        ctx.fillStyle = base;
         ctx.fillRect(0, 0, W, H);
         const s = 1 + (cam.s - 1) * 0.4, [ox, oy] = L.camOrigin;
         ctx.setTransform(s, 0, 0, s, ox * (1 - s) + cam.x * 0.5, oy * (1 - s) + cam.y * 0.5);
-        glow(W * 0.5 + Math.sin((sec * TAU) / 11) * W * 0.26, H * 0.3 + Math.cos((sec * TAU) / 13) * H * 0.1, Math.max(W, H) * 0.5, C.accent, 0.12 * GLOW);
-        glow(W * 0.5 + Math.cos((sec * TAU) / 14) * W * 0.3, H * 0.74 + Math.sin((sec * TAU) / 9) * H * 0.09, Math.max(W, H) * 0.52, C.text, 0.05 * GLOW);
+        glow(W * 0.5 + Math.sin((sec * TAU) / 11) * W * 0.26, H * 0.3 + Math.cos((sec * TAU) / 13) * H * 0.1, Math.max(W, H) * 0.5, C.accent, (K.light ? 0.07 : 0.12) * GLOW);
+        glow(W * 0.5 + Math.cos((sec * TAU) / 14) * W * 0.3, H * 0.74 + Math.sin((sec * TAU) / 9) * H * 0.09, Math.max(W, H) * 0.52, C.text, (K.light ? 0.03 : 0.05) * GLOW);
         if (B.style === "grid") drawGrid(sec);
         drawField(f);
         drawStreams(f);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.55, W / 2, H / 2, Math.max(W, H) * 0.75);
-        v.addColorStop(0, "rgba(0,0,0,0)");
-        v.addColorStop(1, `rgba(0,0,0,${Math.min(1, 0.5 * B.vignette)})`);
+        const shade = K.light ? C.white : "#000000";
+        v.addColorStop(0, rgba(shade, 0));
+        v.addColorStop(1, rgba(shade, Math.min(1, (K.light ? 0.1 : 0.5) * B.vignette)));
         ctx.fillStyle = v;
         ctx.fillRect(0, 0, W, H);
-        ctx.globalAlpha = Math.min(1, B.grain);
+        ctx.globalAlpha = Math.min(1, (K.light ? 0.5 : 1) * B.grain);
         ctx.fillStyle = grain;
         ctx.fillRect(0, 0, W, H);
         ctx.globalAlpha = 1;

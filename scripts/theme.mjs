@@ -1,8 +1,9 @@
 /**
  * theme.mjs: your brand and look as named themes that new reels reuse. A theme can set the brand (handle, channel,
  * cta.follow, cta.spoken, channelLogo: a PNG/JPG/WebP shown round in the follow button) and the look (palette, whose
- * accent is "topic" to follow each topic's logo or a fixed #hex; fonts; background.style dots | grid | glow with
- * density, drift, glow, grain and vignette). Keys a theme leaves out come from your global config. Starter themes
+ * accent is "topic" to follow each topic's logo or a fixed #hex, and an optional surface for cards; fonts; background.style
+ * dots | grid | glow with density, drift, glow, grain and vignette, and an optional gradient #hex the base fades to; chrome.style bar | card for the header and footer; cards.style soft | hard for card edges and shadows).
+ * A light bg (paper) flips glows, shadows and the vignette to soft ink. Keys a theme leaves out come from your global config. Starter themes
  * ship in themes/; yours live in your config under themes.<name>, and one of yours named like a starter adjusts it.
  *
  *   node theme.mjs                                   every theme, * marking the default for new reels

@@ -7,6 +7,8 @@
   DIRECTION.cta.pulseEvery seconds that, at DIRECTION.cta.flyAt, flies up into the final title while the
   DIRECTION.cta.next card drops into its slot; in landscape a FOLLOW pill on the right of the header. With a
   theme channel logo, scaffold.mjs puts it at @avatar and it shows round in the follow button instead of the "+".
+  REEL.chrome.style picks the frame's look: "bar" (default: accent hairline, gradient footer band) or "card" (an
+  ink rule with an accent segment, and the portrait footer's FOLLOW pill and handle on a rounded surface card).
 -->
 <template>
   <style>
@@ -36,12 +38,14 @@
     <div id="ch-wordmark" class="txt"></div>
     <div id="ch-handle" class="txt mono"></div>
     <div id="ch-hair" class="abs"></div>
+    <div id="ch-rule" class="abs"></div>
 
     <div id="ch-track" class="abs"></div>
     <div id="ch-ticks"></div>
     <div id="ch-fill" class="abs"></div>
     <div id="ch-dot" class="abs"><div id="ch-dotglow" class="abs"></div><div id="ch-dotcore" class="abs"></div></div>
 
+    <div id="ch-card" class="abs"></div>
     <div id="ch-cta" class="abs">
       <div id="ch-glowcta" class="abs" data-layout-ignore></div>
       <div id="ch-ring" class="abs"></div>
@@ -79,6 +83,7 @@
       const PULSE = Math.max(1, F(dir.cta.pulseEvery));
       const hd = L.header, tk = L.ticker, pg = L.progress, ft = L.footer;
       const avatar = q("ch-avatar"), FOLLOW = { x: ft ? ft.cta.x + ft.cta.w * 0.56 : 0, size: ft ? ft.size : 0 };
+      const CARD = (REEL.chrome && REEL.chrome.style) === "card";
 
       /** Shows the channel logo round at the button's left edge in place of the "+". */
       function placeAvatar(d, inset) {
@@ -102,7 +107,10 @@
         const wm = hd.wordmark;
         q("ch-wordmark").textContent = (D.header && D.header.wordmark) || (REEL.logo ? REEL.logo.title : REEL.title).toUpperCase();
         set("ch-wordmark", { left: px(REEL.logo ? wm.x : lg.x), top: px(wm.y), fontSize: px(wm.size), color: C.white, letterSpacing: "2px" });
-        set("ch-hair", { left: px(60), top: px(hd.hair), width: px(W - 120), height: "2px", background: rgba(C.accent, 0.4) });
+        set("ch-hair", { left: px(60), top: px(hd.hair), width: px(W - 120), height: "2px", background: CARD ? rgba(C.text, 0.22) : rgba(C.accent, 0.4) });
+        if (CARD) set("ch-rule", { left: px(60), top: px(hd.hair - 1), width: px(160), height: "4px", background: C.accent });
+        else q("ch-rule").style.display = "none";
+        if (!CARD || !ft) q("ch-card").style.display = "none";
 
         set("ch-track", { left: px(pg.x0), top: px(pg.y), width: px(pg.x1 - pg.x0), height: "4px", background: rgba(C.text, 0.14) });
         set("ch-fill", { left: px(pg.x0), top: px(pg.y), width: px(pg.x1 - pg.x0), height: "4px", background: C.accent, transformOrigin: "0 50%", transform: "scaleX(0)" });
@@ -129,15 +137,17 @@
           const meas = document.createElement("canvas").getContext("2d");
           meas.font = `800 ${wm.size}px "Reel Sans"`;
           meas.letterSpacing = "2px";
-          const wmRight = (REEL.logo ? wm.x : lg.x) + meas.measureText(q("ch-wordmark").textContent).width;
+          const wmRight = REEL.logo ? wm.x : lg.x + meas.measureText(q("ch-wordmark").textContent).width;
           meas.font = `700 ${hd.handle.size}px "Reel Mono"`;
           meas.letterSpacing = "0px";
           const room = W - hd.handle.right - wmRight - 40, hs = Math.min(hd.handle.size, Math.floor((hd.handle.size * room) / meas.measureText(REEL.handle).width));
           set("ch-handle", { right: px(hd.handle.right), top: px(hd.handle.y + (hd.handle.size - hs) / 2), fontSize: px(hs), color: rgba(C.text, 0.85) });
           set("ch-foot-band", { left: 0, top: px(ft.bandTop), width: px(W), height: px(L.H - ft.bandTop), background: `linear-gradient(${rgba(C.bg, 0)}, ${rgba(C.bg, 0.8)} 30%, ${rgba(C.bg, 0.95)})` });
           const b = ft.cta;
+          if (CARD) set("ch-card", { left: px(b.x - 18), top: px(b.y - 18), width: px(W - 2 * (b.x - 18)), height: px(b.h + 36), borderRadius: "30px", boxSizing: "border-box", background: rgba(K.surface, 0.97), border: K.cards ? K.edge() : `2px solid ${rgba(C.text, 0.16)}`, boxShadow: K.shadow(0.5) });
           set("ch-cta", { left: px(b.x), top: px(b.y), width: px(b.w), height: px(b.h), transformOrigin: `${b.w / 2}px ${b.h / 2}px` });
           set("ch-glowcta", { left: px(-b.h * 0.875), top: px(-b.h * 2.1), width: px(b.w + b.h * 1.75), height: px(b.h * 5.2), borderRadius: "50%", background: `radial-gradient(closest-side, ${rgba(C.accent, 0.35)}, ${rgba(C.accent, 0.12)} 50%, ${rgba(C.accent, 0)} 100%)` });
+          if (CARD) q("ch-glowcta").style.display = "none";
           set("ch-ring", { left: 0, top: 0, width: px(b.w), height: px(b.h), border: `3px solid ${C.accent}`, borderRadius: px(b.h / 2) });
           set("ch-btn", { left: 0, top: 0, width: px(b.w), height: px(b.h), borderRadius: px(b.h / 2), background: C.accent });
           const k = b.h / 96;
@@ -188,6 +198,7 @@
         q("ch-logo").style.transform = `scale(${(1 + 0.18 * flash).toFixed(4)})`;
         op(q("ch-logoglow"), (0.22 + 0.06 * Math.sin(f * 0.1) + 0.6 * flash) / 0.5);
         op(q("ch-hair"), 1 - prog(f, TICKER_AT, 12));
+        if (CARD) op(q("ch-rule"), 1 - prog(f, TICKER_AT, 12));
 
         if (dir.ticker) {
           op(q("ch-ticker"), prog(f, TICKER_AT, 10, ease.outCubic));
@@ -202,7 +213,8 @@
         const cta = q("ch-cta"), ring = q("ch-ring"), bw = parseFloat(cta.style.width), bh = parseFloat(cta.style.height);
         cta.style.transform = `scale(${bump.toFixed(4)})`;
         op(cta, 1 - fly * 1.6);
-        const grow = k * (ft ? 60 : 36);
+        if (CARD && ft) op(q("ch-card"), 1 - fly * 1.6);
+        const grow = k * (CARD ? 14 : ft ? 60 : 36);
         op(ring, fly > 0 || k >= 0.5 ? 0 : 1 - k / 0.5);
         Object.assign(ring.style, { left: px(-grow), top: px(-grow), width: px(bw + grow * 2), height: px(bh + grow * 2), borderRadius: px(bh / 2 + grow) });
 
@@ -212,12 +224,12 @@
         const follow = q("ch-follow"), handle2 = q("ch-handle2"), next = q("ch-next");
         follow.style.fontSize = px(fs.toFixed(2));
         follow.style.color = fly > 0.15 ? C.white : K.onAccent;
-        follow.style.top = px((fy - 0.52 * fs).toFixed(2));
-        follow.style.transformOrigin = `${(cx + (b.x + b.w / 2) - fx).toFixed(2)}px ${(0.52 * fs + ft.textY - fy).toFixed(2)}px`;
+        follow.style.top = px((fy - K.CAP_MID.sans * fs).toFixed(2));
+        follow.style.transformOrigin = `${(cx + (b.x + b.w / 2) - fx).toFixed(2)}px ${(K.CAP_MID.sans * fs + ft.textY - fy).toFixed(2)}px`;
         follow.style.transform = `translateX(${(fx - cx).toFixed(2)}px) scale(${bump.toFixed(4)})`;
         const hs = lerp(ft.size, fin.handleSize, fly), hx = lerp(ft.handleX, cx, fly), hy = lerp(ft.textY, fin.handleY, fly);
         handle2.style.fontSize = px(hs.toFixed(2));
-        handle2.style.top = px((hy - 0.52 * hs).toFixed(2));
+        handle2.style.top = px((hy - K.CAP_MID.mono * hs).toFixed(2));
         handle2.style.transform = `translateX(${(hx - cx).toFixed(2)}px)`;
         if (FLY != null && dir.cta.next && f >= FLY + 2) {
           next.style.transform = `scale(${(0.875 * lerp(0.5, 1, prog(f, FLY + 2, 8, ease.backOut))).toFixed(4)})`;

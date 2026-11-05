@@ -53,7 +53,7 @@
   }
 
   /** Offset (in em) from a line box's top to the centre of its capitals, per font, at line-height 1. */
-  const CAP_MID = { sans: 0.39, mono: 0.495 };
+  const CAP_MID = K.CAP_MID;
 
   /**
    * A single line of text centred on x whose capitals are centred on cy. Font sizes are in px; mono picks
@@ -75,11 +75,11 @@
   function chip(parent, id, str, { x, y, size = 52, w, h = 84, mono = false, color = C.white, border = C.accent }) {
     const n = mk(parent, "div", id, {
       left: px(x - w / 2), top: px(y - h / 2), width: px(w), height: px(h), borderRadius: px(h / 2),
-      border: `4px solid ${border}`, background: rgba(C.bg, 0.92), boxSizing: "border-box", display: "flex",
+      border: `4px solid ${border}`, background: rgba(K.surface, 0.92), boxSizing: "border-box", display: "flex",
       alignItems: "center", justifyContent: "center", fontSize: px(size), lineHeight: "1", whiteSpace: "pre", color,
       paddingTop: mono ? "0px" : px(Math.round((0.5 - CAP_MID.sans) * 2 * size)),
       fontFamily: mono ? '"Reel Mono", monospace' : '"Reel Sans", sans-serif', fontWeight: mono ? "700" : "800",
-      boxShadow: `0 0 28px ${rgba(border, 0.35)}`, opacity: "0", transformOrigin: "50% 50%",
+      boxShadow: K.light || K.cards ? K.shadow(0.4) : `0 0 28px ${rgba(border, 0.35)}`, opacity: "0", transformOrigin: "50% 50%",
     });
     n.textContent = str;
     return n;
@@ -166,9 +166,12 @@
   /** A line of text in one type-scale kind: left-aligned from `left` when given, else centred on x. */
   function text(parent, id, str, { kind = "label", x = CX, left = null, cy, color = C.white, w = 900 }) {
     const k = T[kind];
-    return left != null
+    const n = left != null
       ? line(parent, id, str, { x: left + w / 2, cy, size: k.size, mono: k.mono, color, w, align: "left" })
       : line(parent, id, str, { x, cy, size: k.size, mono: k.mono, color, w });
+    // A card look marks titles with a highlighter stroke through the lower half of the letters.
+    if (kind === "title" && K.cards) Object.assign(n.style, { textDecorationLine: "underline", textDecorationColor: rgba(C.accent, 0.22), textDecorationThickness: "24px", textUnderlineOffset: "-18px", textDecorationSkipInk: "none" });
+    return n;
   }
 
   /** A chip in the chip kind (mono 30 px, 56 px tall) sized to its text, centred on (x, y). */
@@ -226,7 +229,7 @@
   function iconBox(parent, id, icon, { x, y }) {
     const box = mk(parent, "div", id, {
       left: px(x - ICON / 2), top: px(y - ICON / 2), width: px(ICON), height: px(ICON), borderRadius: "28px",
-      border: `4px solid ${rgba(C.text, 0.5)}`, boxSizing: "border-box", background: rgba(C.bg, 0.95), opacity: "0", transformOrigin: "50% 50%",
+      border: K.edge(0.5), boxSizing: "border-box", background: rgba(K.surface, 0.95), opacity: "0", transformOrigin: "50% 50%",
     });
     const s = attrs(mk(box, "svg:svg", `${id}-ico`), { width: ICON - 8, height: ICON - 8, viewBox: "-60 -60 120 120" });
     Object.assign(s.style, { position: "absolute", left: "0px", top: "0px" });
@@ -237,8 +240,8 @@
   /** Lights an icon box: act 0–1 turns its border gold with a glow. */
   function lightBox(box, act) {
     const a = clamp(act);
-    box.style.borderColor = mix(C.text, C.accent, a, 0.5 + 0.5 * a);
-    box.style.boxShadow = `0 0 ${(36 * a).toFixed(1)}px ${rgba(C.accent, 0.45 * a)}`;
+    box.style.borderColor = K.lit(a, 0.5);
+    box.style.boxShadow = [K.cards && K.shadow(0.5), `0 0 ${(36 * a).toFixed(1)}px ${rgba(C.accent, 0.45 * a)}`].filter(Boolean).join(", ");
   }
 
   /**
@@ -272,6 +275,20 @@
     return { set(p, a = 1) { shaft.set(p, a); head.set(p >= 0.95 ? 1 : 0, a); } };
   }
 
+  /** A window title bar (60 px) across the top of card o: three dots (traffic lights in a card look) and a centred mono title. */
+  function winBar(o, id, title) {
+    const hard = K.cards === "hard", lights = ["#FF5F57", "#FEBC2E", "#28C840"];
+    const bar = mk(o, "div", `${id}-bar`, {
+      left: "0px", top: "0px", width: "100%", height: "60px", boxSizing: "border-box",
+      background: hard ? C.accent : K.cards ? rgba(C.accent, 0.07) : rgba(C.text, 0.08),
+      borderBottom: hard ? K.edge() : `2px solid ${K.cards ? K.lit(0) : rgba(C.text, 0.2)}`,
+    });
+    for (let i = 0; i < 3; i++) mk(bar, "div", `${id}-dot${i}`, { left: px(26 + i * 34), top: "20px", width: "20px", height: "20px", borderRadius: "50%", boxSizing: "border-box", background: K.cards ? lights[i] : rgba(C.text, 0.4), border: hard ? `2px solid ${K.lit(0)}` : "none" });
+    const ttl = mk(bar, "div", `${id}-title`, { left: "0px", top: "15px", width: "100%", textAlign: "center", fontFamily: '"Reel Mono", monospace', fontWeight: "700", fontSize: px(T.chip.size), lineHeight: "1", color: hard ? K.onAccent : rgba(C.text, 0.7), whiteSpace: "pre" });
+    ttl.textContent = title;
+    return bar;
+  }
+
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   /**
@@ -281,14 +298,11 @@
    */
   function terminal(parent, id, { x = CX, cy, w = 940, h = 380, title = "monitor.log", lines }) {
     const o = mk(parent, "div", id, {
-      left: px(x - w / 2), top: px(cy - h / 2), width: px(w), height: px(h), borderRadius: "26px", border: `4px solid ${rgba(C.text, 0.6)}`,
-      boxSizing: "border-box", background: rgba(C.bg, 0.97), overflow: "hidden", opacity: "0", transformOrigin: "50% 50%",
-      boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+      left: px(x - w / 2), top: px(cy - h / 2), width: px(w), height: px(h), borderRadius: "26px", border: K.edge(0.6),
+      boxSizing: "border-box", background: rgba(K.surface, 0.97), overflow: "hidden", opacity: "0", transformOrigin: "50% 50%",
+      boxShadow: K.shadow(),
     });
-    const bar = mk(o, "div", `${id}-bar`, { left: "0px", top: "0px", width: "100%", height: "60px", background: rgba(C.text, 0.08), borderBottom: `2px solid ${rgba(C.text, 0.2)}` });
-    for (let i = 0; i < 3; i++) mk(bar, "div", `${id}-dot${i}`, { left: px(26 + i * 34), top: "20px", width: "20px", height: "20px", borderRadius: "50%", background: rgba(C.text, 0.4) });
-    const ttl = mk(bar, "div", `${id}-title`, { left: "0px", top: "15px", width: "100%", textAlign: "center", fontFamily: '"Reel Mono", monospace', fontWeight: "700", fontSize: px(T.chip.size), lineHeight: "1", color: rgba(C.text, 0.7), whiteSpace: "pre" });
-    ttl.textContent = title;
+    winBar(o, id, title);
     const body = mk(o, "div", `${id}-body`, { left: "44px", top: "92px", width: px(w - 88), fontFamily: '"Reel Mono", monospace', fontWeight: "700", fontSize: px(T.chip.size), lineHeight: "1.75", color: C.text, whiteSpace: "pre" });
     const chars = lines.reduce((n, segs) => n + segs.reduce((m, [s]) => m + s.length, 0), 0);
     let last = "";
@@ -297,7 +311,7 @@
       set({ alpha = 1, s = 1, typed = Infinity, caret = 0, glow = 0 }) {
         o.style.opacity = String(clamp(alpha));
         o.style.transform = `scale(${s.toFixed(4)})`;
-        o.style.borderColor = mix(C.text, C.accent, glow, 0.6 + 0.4 * clamp(glow));
+        o.style.borderColor = K.lit(glow, 0.6);
         let left = Math.floor(typed), html = "", placed = false;
         for (const segs of lines) {
           let row = "";
@@ -337,6 +351,6 @@
 
   window.Design = {
     C, CX, CAP_MID, GRID, T, mk, attrs, svgAt, mix, pose, line, chip, stamp, wire, ring, logoSvg, num, bez, breath,
-    text, tag, ICONS, ICON, FLOW_X, FLOW_TEXT, iconBox, lightBox, flowRow, flowLink, esc, terminal, mapPin,
+    text, tag, ICONS, ICON, FLOW_X, FLOW_TEXT, iconBox, lightBox, flowRow, flowLink, esc, winBar, terminal, mapPin,
   };
 })();

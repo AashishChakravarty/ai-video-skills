@@ -3,7 +3,7 @@
  * each file really carries alpha and the expected frame count. Output defaults to the parent HyperFrames
  * project's assets/clips, so the master always reads the fresh render and there is no copy to forget.
  *
- *   node render-clips.mjs [--out ../assets/clips] [--only id] [--crf 24]
+ *   node render-clips.mjs [--out ../assets/clips] [--only id] [--crf 24] [--port 3917]
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
@@ -19,6 +19,7 @@ const { values: opt } = parseArgs({
     out: { type: 'string', default: path.join(HERE, '../assets/clips') },
     only: { type: 'string' },
     crf: { type: 'string', default: '24' },
+    port: { type: 'string' },
   },
 });
 if (!existsSync(BIN)) throw new Error(`Remotion is not installed: run \`npm install\` in ${HERE}`);
@@ -40,7 +41,7 @@ function probe(file) {
 let failed = 0;
 for (const c of clips) {
   const file = path.join(out, `${c.id}.webm`);
-  const r = spawnSync(BIN, ['render', 'src/index.ts', c.id, file, '--codec=vp9', '--image-format=png', '--pixel-format=yuva420p', `--crf=${opt.crf}`, '--log=warn'], { cwd: HERE, stdio: 'inherit' });
+  const r = spawnSync(BIN, ['render', 'src/index.ts', c.id, file, '--codec=vp9', '--image-format=png', '--pixel-format=yuva420p', `--crf=${opt.crf}`, '--log=warn', ...(opt.port ? [`--port=${opt.port}`] : [])], { cwd: HERE, stdio: 'inherit' });
   if (r.status !== 0) throw new Error(`remotion render failed for "${c.id}"`);
   const p = probe(file), want = c.to - c.from;
   const ok = p.alpha && p.frames === want && p.w === spec.width && p.h === spec.height;

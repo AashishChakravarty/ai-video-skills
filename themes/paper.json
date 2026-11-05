@@ -1,0 +1,24 @@
+{
+  "description": "Light paper fading to lavender: a faint blueprint grid with register marks, near-black ink, a fixed indigo accent, white cards with soft layered shadows, and a card header/footer.",
+  "palette": {
+    "bg": "#F6F4EF",
+    "surface": "#FFFFFF",
+    "text": "#3D3750",
+    "success": "#13804A",
+    "white": "#16131F",
+    "accent": "#5B3DF5"
+  },
+  "background": {
+    "style": "grid",
+    "density": 0.7,
+    "glow": 0.6,
+    "grain": 0.6,
+    "gradient": "#E6E1FA"
+  },
+  "chrome": {
+    "style": "card"
+  },
+  "cards": {
+    "style": "soft"
+  }
+}

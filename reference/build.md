@@ -35,9 +35,12 @@ brought to life.
 - **Field**: the dot field is a character: it drifts toward the hero when things fly (`streams`), breathes
   during loops, swarms or multiplies for scale moments and collapses back for the CTA. The reel's theme sets
   the background style (`reel.json → background`): `grid` keeps fewer dots under a blueprint grid; `glow` has
-  no dots, so field moments come from `streams`, `pulse` and the scenes themselves.
+  no dots, so field moments come from `streams`, `pulse` and the scenes themselves. `background.gradient` (#hex)
+  fades the base from `palette.bg` at the top left to that colour at the bottom right; keep it a small step.
 - **Sound**: soft pad bed; pen-scribble or whoosh on strokes, light clicks on counter ticks, whooshes on
-  flights, a bass impact on the one or two big reveals, a riser into the biggest number.
+  flights, a bass impact on the one or two big reveals, a riser into the biggest number. Keep the long
+  `glitch-*` effects out from under narration (they read as noise); a block or a filter gets `whoosh-short` +
+  `click-soft`.
 
 Put the hero object, its resting poses and shared clocks in `build/a/assets/diagram.js` as pure functions
 of the frame, so neighbouring scenes draw the same object on the same frame and hand-offs line up exactly.
@@ -124,6 +127,15 @@ checks from §9 (check, the font-size grep, a snapshot per beat); let each helpe
 | Progress bar | 1538 | |
 | Follow footer | 1590–1666 | platform UI also covers this zone — nothing important below 1540 except the CTA |
 
+Header and footer come from the theme's `chrome.style`: `bar` (default: wordmark + handle over an accent hairline, a
+gradient footer band) or `card` (an ink rule with an accent segment and the FOLLOW pill + handle on a rounded surface card). Both keep the zones above, so scenes never
+change with the style. Set the wordmark to the topic in direction.js (`header.wordmark`); a light theme (`paper`) uses
+`K.surface` for cards and `K.shadow()` for depth, so build objects with those instead of `C.bg` fills and black shadows.
+The theme's `cards.style` sets the card look: `soft` (hairline edges, layered accent-tinted shadows, traffic-light window
+bars, highlighter titles) or `hard` (solid ink edges, offset ink shadows, an accent window bar). Give every card and cell
+`K.edge(a)` for its border, `K.lit(act, a)` when it lights up and `K.shadow(depth)` for depth (glows join with a comma),
+and use `Design.winBar` for window title bars, so one reel can switch looks by theme.
+
 Landscape 1920×1080: header 0–130 with the FOLLOW pill on the right, ticker 126–194, scene content
 y 220–850 × x 120–1800, captions 880–980, progress 1050.
 
@@ -166,7 +178,9 @@ spinning topic logo) — not for text. Setup, clip pattern, `clips.json` and ren
 each clip to its on-screen span and render early; `render-clips.mjs` writes straight into
 `build/<v>/assets/clips/`; place each clip in index.html at `@clips` inside a `.camwrap` div with an `id`
 on the `<video>` (the renderer freezes videos without one). Keep the 2D labels in HyperFrames and line
-them up with the clip's geometry (both use canvas pixels).
+them up with the clip's geometry (both use canvas pixels). Take every position from `props` (lanes, rows,
+spawn heights, the x of the hero lane), never a literal pixel in the component, so the 16:9 cut only edits
+`clips.json`. If port 3000 is taken (Docker), pass `--port 3917` to `render-clips.mjs`.
 
 ## 8. Motion lessons from earlier reels
 
@@ -182,6 +196,19 @@ them up with the clip's geometry (both use canvas pixels).
 - Deterministic only: `K.rng(seed)` / `K.hash(...)`, never `Math.random()` or `Date`.
 - Search `/hyperframes-registry` before hand-building a named effect (headline slam, number wheel,
   scramble reveal, strikethrough, success check and karaoke captions are already in compositions/components).
+- Show the literal thing the voice names. "The page spins" is the app's own page (a browser window with its
+  URL) under a loader card; "payment gets stuck" is a payment screen whose progress bar stalls; a spoken
+  question opens on a question card that builds word by word with the voice. Abstract chips come after.
+- A spoken headline number or time gets its own beat: hero size, alone on screen for about a second and a half,
+  then it settles to make room for the supporting cards.
+- Maps use real outlines, never hand-drawn ones: Natural Earth admin-0, projected into the scene box and
+  simplified to about 1 px. For India use the India point-of-view file
+  (`geojson/ne_10m_admin_0_countries_ind.geojson` in nvkelso/natural-earth-vector), which has the official
+  boundary.
+- A named machine or system (servers, a router, a database) is drawn at icon-box size or bigger, not as a small
+  glyph beside a chip.
+- No empty stage: every spoken phrase has a visual, including the first two seconds of each scene. Snapshot
+  each scene's opening.
 
 ## 9. Review checklist (before showing the user)
 
@@ -216,7 +243,13 @@ cp build/a/cues.json build/a-16x9/ && node $S/mix.mjs a-16x9 && node $S/render.m
 Captions, header (FOLLOW pill instead of a footer), ticker and progress re-lay themselves. The landscape chrome has
 no flying FOLLOW footer, so the CTA scene adds its own "FOLLOW @handle" line under its lockup. A vertical flow fits
 three steps at `GRID.flow`; a longer flow goes horizontal (boxes in a row, labels under them). Put the hero on the
-left and its numbers and chips in a right-hand column. Snapshot and review it like §9 before publishing.
+left (x 120–1000) and its numbers and chips in a right-hand column (x 1100–1800); scene titles go at the top of
+that column (`x: 1450, cy: GRID.title`), not centred over the hero. The landscape `GRID.rows` has three rows, so a
+four-layer stack gets its own landscape rows in diagram.js `POS` (e.g. `[300, 440, 580, 720]`). With more than
+three scenes, re-lay them with parallel agents (scenes split between them, one agent for the 3D clips) that share a
+written geometry contract: hero and clip stages, label columns, title row, and who edits the shared files
+(diagram.js, direction.js and its field-event positions stay with you). Snapshot and review it like §9 before
+publishing.
 
 ## 12. Troubleshooting
 

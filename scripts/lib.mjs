@@ -344,8 +344,11 @@ export function appliedFixes(text, map) {
 }
 
 /** Keys a theme may set: the brand (handle, channel, follow CTA, channel logo) and the look; the rest stays global. */
-export const THEME_KEYS = ['description', 'handle', 'channel', 'cta', 'channelLogo', 'palette', 'fonts', 'background'];
+export const THEME_KEYS = ['description', 'handle', 'channel', 'cta', 'channelLogo', 'palette', 'fonts', 'background', 'chrome', 'cards'];
 export const BACKGROUND_STYLES = ['dots', 'grid', 'glow'];
+/** Header/footer looks the chrome layer draws (theme key chrome.style); bar is the default. */
+export const CHROME_STYLES = ['bar', 'card'];
+export const CARD_STYLES = ['soft', 'hard'];
 const PLACEHOLDER_ACCENT = '#9B5DE5';
 
 /** Starter themes shipped as themes/<name>.json. */
@@ -368,13 +371,18 @@ export function checkTheme(t) {
   const errors = [], warnings = [], hex = /^#[0-9A-Fa-f]{6}$/, p = t.palette ?? {}, b = t.background ?? {};
   for (const k of ['bg', 'text', 'success', 'white']) if (!hex.test(p[k] ?? '')) errors.push(`palette.${k} must be #RRGGBB, got ${p[k]}`);
   if (p.accent !== 'topic' && !hex.test(p.accent ?? '')) errors.push(`palette.accent must be "topic" or #RRGGBB, got ${p.accent}`);
+  if (p.surface != null && !hex.test(p.surface)) errors.push(`palette.surface must be #RRGGBB, got ${p.surface}`);
+  if (t.chrome?.style != null && !CHROME_STYLES.includes(t.chrome.style)) errors.push(`chrome.style must be ${CHROME_STYLES.join(' | ')}, got ${t.chrome.style}`);
   if (!BACKGROUND_STYLES.includes(b.style)) errors.push(`background.style must be ${BACKGROUND_STYLES.join(' | ')}, got ${b.style}`);
+  if (t.cards?.style != null && !CARD_STYLES.includes(t.cards.style)) errors.push(`cards.style must be ${CARD_STYLES.join(' | ')}, got ${t.cards.style}`);
+  if (b.gradient != null && !hex.test(b.gradient)) errors.push(`background.gradient must be #RRGGBB, got ${b.gradient}`);
   for (const k of ['density', 'drift', 'glow', 'grain', 'vignette']) if (!(typeof b[k] === 'number' && b[k] >= 0)) errors.push(`background.${k} must be a number ≥ 0, got ${b[k]}`);
   for (const k of ['sans', 'mono']) if (!t.fonts?.[k] || !existsSync(configPath(t.fonts[k]))) errors.push(`fonts.${k} not found: ${t.fonts?.[k]}`);
   if (t.channelLogo && !/\.(png|jpe?g|webp)$/i.test(t.channelLogo)) errors.push(`channelLogo must be a PNG, JPG or WebP image, got ${t.channelLogo}`);
   else if (t.channelLogo && !existsSync(configPath(t.channelLogo))) errors.push(`channelLogo not found: ${t.channelLogo}`);
   if (!t.handle) errors.push('no handle: set one in the theme or globally (config.mjs set handle=@you)');
   if (!errors.length && contrast(p.text, p.bg) < 4.5) warnings.push(`text on bg is ${contrast(p.text, p.bg).toFixed(2)}:1; aim for 4.5:1`);
+  if (!errors.length && b.gradient && contrast(p.text, b.gradient) < 4.5) warnings.push(`text on background.gradient is ${contrast(p.text, b.gradient).toFixed(2)}:1; aim for 4.5:1`);
   if (!errors.length && p.accent !== 'topic' && contrast(p.accent, p.bg) < 4.5) warnings.push(`accent on bg is ${contrast(p.accent, p.bg).toFixed(2)}:1; aim for 4.5:1 (a lighter tint: ${readableAccent(p.accent, p.bg)})`);
   return { errors, warnings };
 }
@@ -387,7 +395,7 @@ export function applyTheme(r, name) {
   const accent = !topic ? t.palette.accent : r.reel.logo ? readableAccent(r.reel.logo.hex, t.palette.bg) : PLACEHOLDER_ACCENT;
   Object.assign(r.reel, {
     theme: name, handle: t.handle, channel: t.channel, cta: t.cta, palette: { ...t.palette, accent },
-    accentSource: topic ? 'topic' : 'theme', fonts: t.fonts, background: t.background, channelLogo: null,
+    accentSource: topic ? 'topic' : 'theme', fonts: t.fonts, background: t.background, chrome: t.chrome ?? null, cards: t.cards ?? null, channelLogo: null,
   });
   if (t.channelLogo) {
     mkdirSync(r.file('assets'), { recursive: true });

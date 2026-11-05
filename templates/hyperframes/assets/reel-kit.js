@@ -139,6 +139,9 @@
     Promise.all(['800 56px "Reel Sans"', '700 56px "Reel Mono"'].map((f) => document.fonts.load(f, 'Aअ1'))).then(cb);
   }
 
+  /** Where the middle of the capitals sits below the top of a line-height-1 box, as a fraction of the font size. */
+  const CAP_MID = { sans: 0.39, mono: 0.495 };
+
   /** WCAG relative luminance of a #rrggbb colour. */
   const luminance = (hex) => {
     const n = parseInt(hex.slice(1), 16);
@@ -150,6 +153,29 @@
   const P = REEL.palette, ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
   /** Text colour that reads on an accent fill: white when it has 3:1 there (purple, red), else the background (yellow). */
   const onAccent = ratio(P.white, P.accent) >= 3 ? P.white : P.bg;
+  /** A light theme (paper background, dark ink in palette.white): layers swap glows and black shades for soft ink. */
+  const light = luminance(P.bg) > 0.5;
+  /** Fill for cards, chips and boxes: palette.surface when the theme sets one, else the background. */
+  const surface = P.surface || P.bg;
+  /** The theme's card look (REEL.cards.style): "soft" (hairline edge, layered tinted shadow), "hard" (solid ink edge, offset ink shadow) or null (outlines). */
+  const cards = (REEL.cards && REEL.cards.style) || null;
+  const ink = light ? P.white : P.text;
+  /** A drop shadow for a card at depth (1 = a full card, ~0.3 for a chip), in the theme's card look. */
+  const shadow = (depth = 1) => {
+    const n = (v) => Math.max(1, Math.round(v * depth));
+    if (cards === "hard") return `${n(8)}px ${n(8)}px 0 ${light ? ink : P.accent}`;
+    if (cards === "soft") return `0 1px 2px ${rgba(ink, 0.08)}, 0 ${n(6)}px ${n(16)}px ${rgba(ink, 0.08)}, 0 ${n(22)}px ${n(48)}px ${rgba(P.accent, 0.16)}`;
+    return light ? `0 ${n(14)}px ${n(36)}px ${rgba(ink, 0.14)}` : `0 ${n(30)}px ${n(80)}px rgba(0,0,0,0.55)`;
+  };
+  /** A card or cell border colour lit toward the accent by act 0–1; at rest it is the text at alpha a (outlines), a hairline (soft) or solid ink (hard). */
+  const lit = (act = 0, a = 0.5) => {
+    const [hex, al] = cards === "hard" ? [ink, 1] : [P.text, cards === "soft" ? 0.18 : a];
+    const x = parseInt(hex.slice(1), 16), y = parseInt(P.accent.slice(1), 16), q = clamp(act);
+    const c = (s) => Math.round(lerp((x >> s) & 255, (y >> s) & 255, q));
+    return `rgba(${c(16)},${c(8)},${c(0)},${lerp(al, 1, q)})`;
+  };
+  /** Border shorthand for a card or cell at rest (see lit). */
+  const edge = (a = 0.5) => `${cards === "soft" ? 2 : 4}px solid ${lit(0, a)}`;
 
-  window.ReelKit = { REEL, D, FPS, DUR, TAU, L, LAYOUTS, F, clamp, lerp, wrap, ease, prog, hash, rng, rgba, onAccent, anchor, wordAt, scene, camAt, applyCam, drive, fonts };
+  window.ReelKit = { REEL, D, FPS, DUR, TAU, L, LAYOUTS, CAP_MID, F, clamp, lerp, wrap, ease, prog, hash, rng, rgba, onAccent, light, surface, cards, shadow, lit, edge, anchor, wordAt, scene, camAt, applyCam, drive, fonts };
 })();
