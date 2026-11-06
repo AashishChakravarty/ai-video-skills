@@ -1,6 +1,6 @@
 ---
 name: ai-video-skills
-description: End-to-end short-video studio for tech explainer reels (Instagram Reels, YouTube Shorts, TikTok, LinkedIn, plus a 16:9 YouTube cut) in any language the voice engines speak (tested with English and Hindi/Hinglish). Asks for a topic, researches it, writes the hook and scene script with an ElevenLabs-style tagged audio script, gets approval, makes the voice-over locally (VoiceStudio/OmniVoice, Chatterbox, macOS say) or imports one from ElevenLabs, another platform or the user's recording, aligns words, builds the video with HyperFrames in its Living Diagram style (several directions to compare only when asked), then produces the publish pack (final video, no-subtitle copy, 16:9 cut, SRT, covers, per-platform captions). Use this whenever the user wants to make, script, voice, build, render or publish a reel, short, explainer video or "video on <topic>", wants to continue or fix an existing reel folder (one with reel.json), or asks for reel captions/hashtags — even if they don't name the skill.
+description: End-to-end short-video studio for tech explainer reels (Instagram Reels, YouTube Shorts, TikTok, LinkedIn, plus a 16:9 YouTube cut) in any language the voice engines speak (tested with English and Hindi/Hinglish). Asks for a topic, researches it, writes the hook and scene script with an ElevenLabs-style tagged audio script, gets approval, makes the voice-over locally (VoiceStudio/OmniVoice, Chatterbox, macOS say) or imports one from ElevenLabs, another platform or the user's recording, aligns words, builds the video with HyperFrames in its Living Diagram style (several directions to compare only when asked; a fast mode with ready-made scenes and one approval for 30–40 minute reels), then produces the publish pack (final video, no-subtitle copy, 16:9 cut, SRT, covers, per-platform captions). Use this whenever the user wants to make, script, voice, build, render or publish a reel, short, explainer video or "video on <topic>", wants to continue or fix an existing reel folder (one with reel.json), or asks for reel captions/hashtags — even if they don't name the skill.
 ---
 
 # AI Video Skills
@@ -44,6 +44,28 @@ creates one, `theme.mjs default <name>` makes it the default.
    `scaffold.mjs <v> --sync` for each built version. A ticker strip under the header is off by default; only
    when the user asks for one, set `reel.json → ticker` (4–6 short items) and build.md §6. From here on pass `--reel <that folder>` to every script (or work
    from inside it): scripts otherwise act on the reel.json nearest the current directory.
+
+## Fast mode (a reel in 30–40 minutes)
+
+Use it when the user asks for a fast or quick reel, or for a series they have set up for it (a reel with
+`fast: true` resumes in fast mode). It trades bespoke scenes for ready-made ones: one approval, one review.
+
+1. `node $S/new-reel.mjs "<topic>" --fast [--theme <series theme>]` → the 5-scene script template
+   (`templates/reel/script.fast.md`): hook-app → big-number → stack (or steps) → bottleneck (or steps) → end,
+   45–60 s. Research only the facts the script states (research.md, with sources), not the full survey.
+2. Write the script: each scene keeps its `Kind:` line and each @beat carries its on-screen label in quotes,
+   fields split on " | " (slots in build.md §13). Also fill `Wordmark:` (topic only). **Gate 1 is the only
+   gate before the end**: the user approves the script; then run straight through.
+3. Voice from the saved settings (`tts.mjs` with no flags uses the config's engine, voice, speed and seed; skip
+   samples), align, `script.mjs time`. Audio needs no separate approval unless a take sounds wrong to you.
+4. `scaffold.mjs a` → `starter.mjs a` (library scenes, a simple direction and cues) → `mix.mjs a` → `check` →
+   `snapshot` each scene's beats and fix labels that crowd or overflow (shorten the label, re-time, `scaffold.mjs a
+   --sync`) → `render.mjs a`. A topic that needs a visual the library lacks gets that one scene hand-built;
+   the rest stay library scenes.
+5. Gate 3 doubles as the final review: show `out/a.mp4` and the contact sheet; ask for all notes in one message.
+6. Publish 9:16 only (no 16:9 cut, no 3D, one version): `captions.md`, `publish.mjs a --cover-at <s>` (its one
+   no-subtitle render keeps captions off the cover), and the notes PDF from `templates/notes/notes.html` while
+   the render runs, if the CTA promises one.
 
 ## Stage 1–2 — research and script → Gate 1
 

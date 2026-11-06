@@ -180,6 +180,9 @@
     return chip(parent, id, str, { x, y, w, h: 56, size: T.chip.size, mono: true, color, border });
   }
 
+  const stroke = (g, d, col = C.white, w = 6) =>
+    attrs(mk(g, "svg:path", null), { d, fill: "none", stroke: col, "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round" });
+
   /** Line icons drawn into an SVG group on a 120 × 120 box centred on the origin (white strokes, gold details). */
   const ICONS = {
     hacker(g) {
@@ -220,6 +223,65 @@
     wallets(g) {
       [[-26, -30, 0.3], [-12, -14, 0.6], [2, 2, 1]].forEach(([x, y, a]) =>
         attrs(mk(g, "svg:rect", null), { x: x - 20, y, width: 80, height: 50, rx: 8, fill: a === 1 ? C.accent : C.bg, stroke: C.accent, "stroke-width": 5, opacity: a }));
+    },
+    globe(g) {
+      attrs(mk(g, "svg:circle", null), { r: 44, fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      stroke(g, "M -44 0 H 44 M 0 -44 C -26 -20 -26 20 0 44 C 26 20 26 -20 0 -44");
+      for (const [x, y] of [[-30, -30], [32, -24], [26, 32], [-34, 26]]) attrs(mk(g, "svg:circle", null), { cx: x, cy: y, r: 7, fill: C.accent });
+    },
+    shield(g) {
+      attrs(mk(g, "svg:path", null), { d: "M 0 -50 L 40 -34 V 2 C 40 28 22 44 0 52 C -22 44 -40 28 -40 2 V -34 Z", fill: C.bg, stroke: C.white, "stroke-width": 6, "stroke-linejoin": "round" });
+      stroke(g, "M -16 2 L -4 14 L 18 -12", C.accent, 7);
+    },
+    server(g) {
+      for (const y of [-42, -10, 22]) {
+        attrs(mk(g, "svg:rect", null), { x: -44, y, width: 88, height: 26, rx: 6, fill: C.bg, stroke: C.white, "stroke-width": 5 });
+        attrs(mk(g, "svg:circle", null), { cx: -28, cy: y + 13, r: 4, fill: C.accent });
+        stroke(g, `M 4 ${y + 13} H 30`, rgba(C.text, 0.8), 4);
+      }
+    },
+    router(g) {
+      attrs(mk(g, "svg:rect", null), { x: -22, y: -22, width: 44, height: 44, rx: 8, fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      stroke(g, "M 0 -24 V -48 M -10 -40 L 0 -50 L 10 -40 M 0 24 V 50 M -10 42 L 0 52 L 10 42", C.white, 5);
+      stroke(g, "M 22 0 H 50 M 42 -9 L 51 0 L 42 9 M -22 0 H -50 M -42 -9 L -51 0 L -42 9", C.accent, 5);
+    },
+    db(g) {
+      attrs(mk(g, "svg:path", null), { d: "M -40 -32 V 32 C -40 48 40 48 40 32 V -32", fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      attrs(mk(g, "svg:ellipse", null), { cx: 0, cy: -32, rx: 40, ry: 14, fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      stroke(g, "M -40 0 C -40 16 40 16 40 0", C.accent, 5);
+    },
+    lock(g) {
+      stroke(g, "M -20 -6 V -24 C -20 -50 20 -50 20 -24 V -6", C.white, 8);
+      attrs(mk(g, "svg:rect", null), { x: -34, y: -8, width: 68, height: 54, rx: 10, fill: C.accent });
+      attrs(mk(g, "svg:circle", null), { cx: 0, cy: 16, r: 7, fill: C.bg });
+    },
+    cloud(g) {
+      attrs(mk(g, "svg:path", null), { d: "M -38 30 H 36 C 56 30 56 2 38 0 C 40 -26 6 -36 -6 -16 C -20 -32 -46 -20 -40 2 C -58 6 -56 30 -38 30 Z", fill: C.bg, stroke: C.white, "stroke-width": 6, "stroke-linejoin": "round" });
+      stroke(g, "M -14 14 H 18", C.accent, 6);
+    },
+    chat(g) {
+      attrs(mk(g, "svg:path", null), { d: "M -44 -36 H 44 V 22 H -6 L -26 42 V 22 H -44 Z", fill: C.bg, stroke: C.white, "stroke-width": 6, "stroke-linejoin": "round" });
+      for (const x of [-20, 0, 20]) attrs(mk(g, "svg:circle", null), { cx: x, cy: -7, r: 6, fill: C.accent });
+    },
+    train(g) {
+      attrs(mk(g, "svg:rect", null), { x: -36, y: -46, width: 72, height: 76, rx: 16, fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      attrs(mk(g, "svg:rect", null), { x: -24, y: -32, width: 48, height: 24, rx: 4, fill: C.accent });
+      for (const x of [-18, 18]) attrs(mk(g, "svg:circle", null), { cx: x, cy: 14, r: 6, fill: C.white });
+      stroke(g, "M -26 30 L -38 50 M 26 30 L 38 50", C.white, 6);
+    },
+    clock(g) {
+      attrs(mk(g, "svg:circle", null), { r: 46, fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      stroke(g, "M 0 0 V -30 M 0 0 L 20 10", C.accent, 7);
+    },
+    phone(g) {
+      attrs(mk(g, "svg:rect", null), { x: -28, y: -50, width: 56, height: 100, rx: 12, fill: C.bg, stroke: C.white, "stroke-width": 6 });
+      stroke(g, "M -8 -38 H 8", C.white, 5);
+      attrs(mk(g, "svg:circle", null), { cx: 0, cy: 36, r: 5, fill: C.accent });
+    },
+    bank(g) {
+      attrs(mk(g, "svg:path", null), { d: "M -48 -18 L 0 -48 L 48 -18 Z", fill: C.bg, stroke: C.white, "stroke-width": 6, "stroke-linejoin": "round" });
+      stroke(g, "M -34 -10 V 30 M -12 -10 V 30 M 12 -10 V 30 M 34 -10 V 30", C.accent, 7);
+      stroke(g, "M -48 42 H 48", C.white, 7);
     },
   };
 

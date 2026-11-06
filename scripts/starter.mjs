@@ -1,8 +1,12 @@
 /**
- * starter.mjs: gives a scaffolded version a renderable baseline — one simple scene per script scene that has no
- * composition yet (each beat's on-screen label slams in at its spoken time and holds until the next beat), their
- * hosts in index.html, and a starter cues.json (a whoosh per scene, a hit per beat) if none exists. Use it to
- * test the pipeline end to end, or as the first draft a creative direction replaces scene by scene.
+ * starter.mjs: gives a scaffolded version a renderable baseline — one scene per script scene that has no composition
+ * yet, their hosts in index.html, and a starter cues.json (a whoosh per scene, a pop per beat, bass hits on the
+ * hook's last beat and the last scene's first) if none exists. A scene whose script block has a `Kind: <kind>` line
+ * becomes that ready-made library scene (assets/library.js; fast mode), filled from its beats' labels; any other
+ * scene gets a simple one where each beat's label slams in at its spoken time. When it makes a library scene and
+ * direction.js is still the template's, it also writes a simple direction: a camera hit on each scene's first beat,
+ * punches on the hook's last beat and the end card, the script's `Wordmark:` in the header and the FOLLOW fly-in
+ * on the end scene's last beat.
  *
  *   node starter.mjs <version> [--reel dir]
  */
@@ -25,6 +29,23 @@ const total = Math.ceil(words.duration * fps);
 const data = readFileSync(path.join(dir, 'assets/reel-data.js'), 'utf8');
 const [W, H] = [Number(data.match(/"W":(\d+)/)[1]), Number(data.match(/"H":(\d+)/)[1])];
 const template = readFileSync(path.join(dir, 'compositions/scene-template.html'), 'utf8');
+
+// `Kind:` lines in script.md pick a library scene; `Wordmark:` is the header's topic text.
+const md = existsSync(r.file('script.md')) ? readFileSync(r.file('script.md'), 'utf8') : '';
+const kinds = {};
+let current = null;
+for (const ln of md.split(/\r?\n/)) {
+  current = ln.match(/^##\s+.*\[([\w-]+)\]\s*$/)?.[1] ?? current;
+  const kind = current && ln.match(/^Kind:\s*([\w-]+)\s*$/);
+  if (kind) kinds[current] = kind[1];
+}
+const wordmark = md.match(/^Wordmark:\s*(.+?)\s*$/m)?.[1] ?? null;
+const libFile = path.join(dir, 'assets/library.js');
+const slots = existsSync(libFile) ? readFileSync(libFile, 'utf8').match(/const SLOTS = \{([\s\S]*?)\n {2}\};/)?.[1] ?? '' : '';
+const LIB = [...slots.matchAll(/^\s+"?([a-z-]+)"?: \[/gm)].map((m) => m[1]);
+for (const [id, kind] of Object.entries(kinds)) {
+  if (!LIB.includes(kind)) throw new Error(`script.md [${id}] Kind: ${kind} is not a library scene (${LIB.length ? LIB.join(', ') : 'build/' + version + '/assets/library.js is missing; scaffold a new version'})`);
+}
 const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 /** A scene composition whose beats are [label, seconds] pairs, built from scene-template.html. */
@@ -67,6 +88,16 @@ function sceneHtml(id, beats) {
     .replaceAll('scene-id', comp);
 }
 
+/** A library scene: an empty camera div that Library.scene fills from the scene's anchors at load time. */
+function libraryHtml(id, kind) {
+  const comp = `scene-${id}`;
+  return template
+    .replace(/<!--[\s\S]*?-->/, `<!--\n  ${comp}: library scene "${kind}" for script scene [${id}] written by starter.mjs; its beats are the scene's\n  @anchors and their quoted labels (slots in assets/library.js). Change the labels in script.md, then script.mjs time\n  and scaffold.mjs --sync; or replace this file with a hand-built scene.\n-->`)
+    .replace(/<div id="scene-id-cam"[\s\S]*?<\/div>\n    <\/div>/, `<div id="${comp}-cam" data-layout-allow-overflow data-layout-allow-overlap></div>`)
+    .replace(/<script>[\s\S]*<\/script>/, `<script>\n    window.Library.scene(${JSON.stringify(kind)}, ${JSON.stringify(id)});\n  </script>`)
+    .replaceAll('scene-id', comp);
+}
+
 const index = path.join(dir, 'index.html');
 let html = readFileSync(index, 'utf8');
 const made = [];
@@ -75,19 +106,44 @@ words.scenes.forEach((scene, i) => {
   if (existsSync(file) || html.includes(`data-composition-id="${comp}"`)) return;
   const beats = anchors.filter((a) => a.scene === scene.id).map((a) => [a.label ?? a.token.toUpperCase(), a.t]);
   if (!beats.length) beats.push([scene.id.toUpperCase(), scene.start]);
-  writeFileSync(file, sceneHtml(scene.id, beats));
+  writeFileSync(file, kinds[scene.id] ? libraryHtml(scene.id, kinds[scene.id]) : sceneHtml(scene.id, beats));
   const start = Math.round(scene.start * fps), end = words.scenes[i + 1] ? Math.round(words.scenes[i + 1].start * fps) + 10 : total;
   html = html.replace('<!-- @scenes', `<div id="${comp}" class="scene" data-composition-id="${comp}" data-composition-src="compositions/${comp}.html" data-start="${(start / fps).toFixed(6)}" data-duration="${((Math.min(end, total) - start) / fps).toFixed(6)}" data-track-kind="graphics" data-width="${W}" data-height="${H}"></div>\n      <!-- @scenes`);
   made.push(scene.id);
 });
 writeFileSync(index, html);
 
+/** [scene, token, n] for an anchor, n counting earlier anchors with the same token in its scene. */
+const ref = (a) => [a.scene, a.token, anchors.filter((b) => b.scene === a.scene && b.token === a.token).indexOf(a)];
+const first = (id) => anchors.find((a) => a.scene === id), last = (id) => anchors.findLast((a) => a.scene === id);
+const hookLast = last(words.scenes[0].id), endFirst = first(words.scenes.at(-1).id);
+
 const cueFile = path.join(dir, 'cues.json');
 if (!existsSync(cueFile)) {
+  const big = new Set([hookLast, endFirst].filter(Boolean));
   const cues = [
-    ...words.scenes.map((s) => ({ t: Math.max(0, s.start - 0.15), sfx: 'whoosh', vol: 0.25 })),
-    ...anchors.map((a, i) => ({ at: [a.scene, a.token, anchors.slice(0, i).filter((b) => b.scene === a.scene && b.token === a.token).length], sfx: i % 3 ? 'pop' : 'impact-bass-1', vol: i % 3 ? 0.25 : 0.4 })),
+    ...words.scenes.map((s) => ({ t: Math.max(0, s.start - 0.15), sfx: 'whoosh', vol: 0.22 })),
+    ...anchors.map((a, i) => (big.has(a) ? { at: ref(a), sfx: 'impact-bass-1', vol: 0.4 } : { at: ref(a), sfx: i % 2 ? 'pop' : 'click-soft', vol: 0.22 })),
   ];
   writeJson(cueFile, { bed: { key: 'A', mode: 'minor', bpm: 100 }, cues });
 }
+
+const dirFile = path.join(dir, 'assets/direction.js');
+const pristine = existsSync(dirFile) && /concept: ""/.test(readFileSync(dirFile, 'utf8')) && /hits: \[\]/.test(readFileSync(dirFile, 'utf8'));
+let directed = false;
+if (made.some((id) => kinds[id]) && pristine) {
+  const A = (a) => `A(${ref(a).map((v) => JSON.stringify(v)).join(', ')})`;
+  const hits = words.scenes.map((s) => first(s.id)).filter(Boolean).map((a) => `        [${A(a)}, 6, 0.2],`);
+  const punches = [hookLast, endFirst].filter(Boolean).map((a) => `        { at: ${A(a)}, amount: 0.05, decay: 0.35 },`);
+  const endScene = words.scenes.at(-1).id, follow = kinds[endScene] === 'end' ? last(endScene) : null;
+  writeFileSync(dirFile, readFileSync(dirFile, 'utf8')
+    .replace('concept: ""', 'concept: "Fast mode: ready-made library scenes"')
+    .replace('hits: [],', `hits: [\n${hits.join('\n')}\n      ],`)
+    .replace('punches: [],', `punches: [\n${punches.join('\n')}\n      ],`)
+    .replace('events: [] }', `events: [${hookLast ? `{ type: "pulse", at: ${A(hookLast)}, frames: 16 }` : ''}] }`)
+    .replace('wordmark: null', `wordmark: ${JSON.stringify(wordmark)}`)
+    .replace('flyAt: null', `flyAt: ${follow ? A(follow) : 'null'}`));
+  directed = true;
+}
+console.log(`library scenes: ${made.filter((id) => kinds[id]).join(', ') || 'none'}${directed ? '; wrote a fast-mode direction.js' : ''}`);
 console.log(`starter scenes: ${made.length ? made.join(', ') : 'none needed'}; cues.json ${existsSync(cueFile) ? 'ready' : 'missing'}`);

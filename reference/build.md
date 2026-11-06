@@ -260,3 +260,25 @@ publishing.
 - HyperFrames plugin install fails on `git-lfs`: re-run the clone with
   `GIT_CONFIG_COUNT=3 GIT_CONFIG_KEY_0=filter.lfs.process GIT_CONFIG_VALUE_0= GIT_CONFIG_KEY_1=filter.lfs.smudge GIT_CONFIG_VALUE_1=cat GIT_CONFIG_KEY_2=filter.lfs.required GIT_CONFIG_VALUE_2=false`
   (or `brew install git-lfs`).
+
+## 13. Library scenes (fast mode)
+
+`assets/library.js` holds ready-made portrait scenes. A script scene with a `Kind:` line becomes one when
+`starter.mjs` runs; its beats are the scene's @anchors with their quoted labels (fields split on " | "), read
+from reel-data.js, so after a label or timing change run `script.mjs time` and `scaffold.mjs <v> --sync`.
+Beats fill the slots in order; a label that starts with a slot name (`"stamp: NOT AVAILABLE"`) fills that slot.
+
+| Kind | Slots, in order |
+|---|---|
+| `hook-app` | question `LINE 1 \| LINE 2` · page `url \| HEADING \| ITEM \| ITEM SUB \| BUTTON` · loader `TEXT` · stuck `HEADING \| AMOUNT \| STATUS \| OPT, OPT, OPT` · stamp `TEXT` · why `TEXT \| TAG` |
+| `big-number` | big `VALUE \| SUB` (alone at hero size, then it settles) · stat `VALUE \| CAPTION` ×2 (digits roll) |
+| `stack` | title · layer `NAME \| SUB \| icon` ×4 (each drops in and lights; dots flow down) |
+| `steps` | title (window bar) · step `KEY \| TEXT` ×6 (rows wipe in, ticks as the next starts) |
+| `bottleneck` | title · label (chip under the lock) · note (tag) · wait (spinner + text) |
+| `end` | comment `SMALL \| KEYWORD` · follow (last beat; clears for the chrome's FOLLOW) · next only as `"next: A \| B"` |
+
+Keep fields to 2–5 words; the library shrinks text that would overflow, but short reads better. Land each
+scene's last beat at least 1.5 s before the scene ends, or `check` flags it as unread. `check`'s `line_unread` on
+"0 1 2 3 4 5 6 7 8 9" is the big-number odometer: it goes away when the counter has 3.5 s on screen. Icons:
+globe, shield, server, router, db, lock, cloud, chat, train, clock, phone, bank, user, laptop, key. To go beyond
+a kind, replace that scene's file with a hand-built one; the library is plain Design-kit code to copy from.

@@ -150,6 +150,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | `mix.mjs` | voice + pad bed or ducked music + SFX cues → −14 LUFS |
 | `render.mjs`, `contact.mjs`, `compare.mjs` | check + render + contact sheet; side-by-side compare of two versions |
 | `srt.mjs`, `cover.mjs`, `publish.mjs` | subtitles, covers and the verified publish pack |
+| `new-reel.mjs --fast` + `starter.mjs` | fast mode: a 5-scene script whose scenes are ready-made library scenes (`assets/library.js`) |
 | `notes.mjs` | prints the reel's notes document (the "comment KEYWORD" freebie) to an A4 PDF |
 
 ## Layout
@@ -166,7 +167,7 @@ templates/reel/          research.md, script.md, pronounce.json for a new reel
 templates/hyperframes/   master project: living background, chrome, karaoke captions, shared runtime
 templates/remotion/      transparent 3D clip kit (Logo3D, OrthoStage, render-clips.mjs)
 templates/notes/         notes.html: the readable A4 notes document a "comment KEYWORD" CTA promises
-examples/                short English and Hindi scripts for testing
+examples/                short English and Hindi scripts for testing; script.fast.en.md uses every library scene
 assets/                  fonts and GSAP copied into every build
 ```
 

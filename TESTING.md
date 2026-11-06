@@ -84,6 +84,20 @@ under it (off by default), a moving dot field in every
 contact-sheet tile, the beat labels slamming in on their words, karaoke captions in sync with the voice,
 the progress bar, and the pinned FOLLOW footer.
 
+**Fast mode** (optional) — the same pipeline with ready-made library scenes:
+
+```bash
+node $S/new-reel.mjs "IRCTC Tatkal" --fast --slug fast-test --root /tmp/reel-test && cd /tmp/reel-test/fast-test
+cp ~/.claude/skills/ai-video-skills/examples/script.fast.en.md script.md
+node $S/script.mjs vo && node $S/tts.mjs --engine say
+uv run $S/align.py --audio audio/vo.wav --vo vo.txt --out words.json && node $S/script.mjs time
+node $S/scaffold.mjs a && node $S/starter.mjs a && node $S/mix.mjs a && node $S/render.mjs a
+```
+✓ starter prints `library scenes: hook, number, stack, steps, jam, cta; wrote a fast-mode direction.js`, and the
+render passes check (warnings only). In `out/a-contact.png`: a question bubble, a browser page with a loader, a
+payment screen and a stamp, a big 10:02 that settles above two rolling counters, a four-layer stack, a step window
+with ticks, a funnel with a lock, and the COMMENT DESIGN card before the FOLLOW lockup.
+
 **Themes** (optional) — `node $S/theme.mjs` lists `midnight`, `terminal` and `alert`. Switch this reel and build
 another version in that look:
 

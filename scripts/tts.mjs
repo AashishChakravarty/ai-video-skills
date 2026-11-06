@@ -13,7 +13,7 @@
  *
  * --sample renders only the opening sentence to audio/samples/<engine>-<voice>[-<instruct>]-x<speed>-s<seed>.wav for
  * picking a voice; --scene re-takes just those scenes and re-stitches. --tail pads silence after the last word so the
- * end card can hold. --speed defaults to the config's tts.speed. VoiceStudio is the local OmniVoice app (opened if not
+ * end card can hold. --speed and --seed default to the config's tts.speed and tts.seed. VoiceStudio is the local OmniVoice app (opened if not
  * running); a --voice that is an audio file clones that voice on the fly (VoiceStudio and Chatterbox).
  * Stitching cuts a take's leading stall (a faint breath, then a pause before the first word), prints each scene's
  * length and its pauses of 0.3 s or more, and the measured speaking rate against the config's wordsPerSecond.
@@ -32,7 +32,7 @@ const { values: opt } = parseArgs({
     scene: { type: 'string', multiple: true },
     input: { type: 'string' },
     speed: { type: 'string', default: String(CONFIG.tts.speed ?? 1) },
-    seed: { type: 'string', default: '7' },
+    seed: { type: 'string', default: String(CONFIG.tts.seed ?? 7) },
     quality: { type: 'string', default: '16' },
     instruct: { type: 'string' },
     gap: { type: 'string', default: '0.35' },
