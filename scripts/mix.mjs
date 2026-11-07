@@ -7,10 +7,12 @@
  *     "music": { "file": "path.mp3", "volume": 0.18 } | null,
  *     "cues": [ { "at": ["hook", "आज"], "offset": 0, "sfx": "impact-bass-1", "vol": 0.55 },
  *               { "word": "crash", "from": 30, "sfx": "pop", "vol": 0.4 },
+ *               { "scene": "stack", "offset": -0.15, "sfx": "whoosh", "vol": 0.22 },
  *               { "t": 11.05, "sfx": "riser", "vol": 0.35, "trim": 8.2, "dur": 1.8 } ] }
  *
  * "at" is a script anchor (scene, token[, n]); "word" (with an optional "from" seconds, both flat on the cue) is the
- * first spoken match after "from", so cues follow a re-made voice-over; "t" is absolute seconds.
+ * first spoken match after "from", so cues follow a re-made voice-over; "scene" is that scene's first word (a
+ * transition whoosh); "t" is absolute seconds.
  * sfx is a name from the SFX library (node mix.mjs --list; HyperFrames media-use by default, or config sfxDir) or a
  * path to an audio file.
  *
@@ -48,13 +50,19 @@ const vo = r.file(r.reel.audio.vo);
 const cueFile = r.file('build', version, 'cues.json');
 const sheet = existsSync(cueFile) ? readJson(cueFile) : { bed: { key: 'A', mode: 'minor', bpm: 100 }, cues: [] };
 const anchors = existsSync(r.file('anchors.json')) ? readJson(r.file('anchors.json')) : [];
-const spoken = existsSync(r.file('words.json')) ? readJson(r.file('words.json')).words : [];
+const timing = existsSync(r.file('words.json')) ? readJson(r.file('words.json')) : { words: [], scenes: [] };
+const spoken = timing.words;
 const bare = (w) => w.normalize('NFC').toLowerCase().replace(/[.,!?;:…।॥"']/g, '');
 const out = path.resolve(opt.out ?? r.file('build', version, 'assets/mix.wav'));
 const total = probeDuration(vo);
 
 function cueTime(c) {
   if (c.t != null) return c.t + (c.offset ?? 0);
+  if (c.scene) {
+    const s = timing.scenes.find((x) => x.id === c.scene);
+    if (!s) throw new Error(`cue scene "${c.scene}" not in words.json (scenes: ${timing.scenes.map((x) => x.id).join(', ')})`);
+    return Math.max(0, s.start + (c.offset ?? 0));
+  }
   if (c.word) {
     const w = spoken.find((x) => x.start >= (c.from ?? 0) && bare(x.word) === bare(c.word));
     if (!w) throw new Error(`cue word "${c.word}" not spoken after ${c.from ?? 0}s`);

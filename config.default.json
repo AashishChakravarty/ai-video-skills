@@ -24,7 +24,9 @@
   },
   "fonts": {
     "sans": "assets/fonts/NotoSansDevanagari-800.ttf",
-    "mono": "assets/fonts/JetBrainsMono-700.ttf"
+    "mono": "assets/fonts/JetBrainsMono-700.ttf",
+    "sansRegular": "assets/fonts/NotoSansDevanagari-400.ttf",
+    "monoRegular": "assets/fonts/JetBrainsMono-400.ttf"
   },
   "background": {
     "style": "dots",

@@ -47,8 +47,10 @@ creates one, `theme.mjs default <name>` makes it the default.
 
 ## Fast mode (a reel in 30–40 minutes)
 
-Use it when the user asks for a fast or quick reel, or for a series they have set up for it (a reel with
-`fast: true` resumes in fast mode). It trades bespoke scenes for ready-made ones: one approval, one review.
+Use it when the user asks for a fast or quick reel (a reel with `fast: true` resumes in fast mode). It trades
+bespoke scenes for ready-made ones: one approval, one review. Every fast-mode reel shares the same scenes and frames,
+so a series (parts posted in a row) is built in normal mode with a fresh visual pattern per part, unless the user
+asks for fast mode for it.
 
 1. `node $S/new-reel.mjs "<topic>" --fast [--theme <series theme>]` → the 5-scene script template
    (`templates/reel/script.fast.md`): hook-app → big-number → stack (or steps) → bottleneck (or steps) → end,
@@ -102,9 +104,13 @@ adds a plain copy for other platforms) and ask in one question how to create the
 For 2–4, wait for the file (whole reel or one per scene) and import it with `tts.mjs --engine file`.
 Show the per-scene report tts.mjs prints (lengths, stalls cut, pauses) with the voice, and offer to save a
 measured speaking rate or a picked speed to the config. **Wait for approval of `audio/vo.wav`**; re-take single
-scenes on request (`--scene`, another `--seed` for a stop or an over-stressed word). A mispronounced word
-is fixed with `pronounce.mjs set word=respelling`, then a re-take of the scenes that use it; a wrong accent
-overall is a voice choice (another voice, or `--instruct "indian accent"` on VoiceStudio). Record `gates.audio`.
+scenes on request (`--scene`). A take that slurs, drops or misreads a word ("breaking" audio) is re-taken with
+`--scene <id> --seeds 7,42,99`: one take per seed, scored by the aligner, the cleanest kept — then listen to it,
+since a dropped word can still score well. A mispronounced word is fixed with `pronounce.mjs set word=respelling`
+(a Hindi respelling the voice shortens, स्टेटस read as "stats", gets its vowel written out: स्टेटअस; audio.md
+§Pronunciation), then a re-take of the scenes that use it; a wrong accent overall is a voice choice (another voice,
+or `--instruct "indian accent"` on VoiceStudio). Takes keep the text they were made from, and stitching refuses one
+the script has since changed under, so after moving a line between scenes re-take both. Record `gates.audio`.
 
 ## Stage 4 — words (no gate)
 
@@ -114,7 +120,10 @@ node $S/script.mjs time
 ```
 
 This turns the approved audio into word timings (script spelling kept) and every `@word` beat into an
-exact time (`script.timed.md`, `anchors.json`). Glance at the scene boundaries it prints.
+exact time (`script.timed.md`, `anchors.json`). Glance at the scene boundaries it prints. After any re-take or
+re-align of a built reel, also run `scaffold.mjs <v> --sync` for each version: it moves the scene hosts to the new
+timing and, like `script.mjs time`, lists any anchor a scene, direction.js or cues.json still uses that the script
+no longer has (render.mjs refuses to render until they are fixed).
 
 ## Stage 5 — build → Gate 3
 

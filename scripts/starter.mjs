@@ -13,7 +13,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { loadReel, readJson, writeJson } from './lib.mjs';
+import { loadReel, readJson, sceneSpans, writeJson } from './lib.mjs';
 
 const { values: opt, positionals } = parseArgs({ allowPositionals: true, options: { reel: { type: 'string' } } });
 const version = positionals[0];
@@ -101,14 +101,15 @@ function libraryHtml(id, kind) {
 const index = path.join(dir, 'index.html');
 let html = readFileSync(index, 'utf8');
 const made = [];
+const spans = sceneSpans(words.scenes, fps, total);
 words.scenes.forEach((scene, i) => {
   const comp = `scene-${scene.id}`, file = path.join(dir, 'compositions', `${comp}.html`);
   if (existsSync(file) || html.includes(`data-composition-id="${comp}"`)) return;
   const beats = anchors.filter((a) => a.scene === scene.id).map((a) => [a.label ?? a.token.toUpperCase(), a.t]);
   if (!beats.length) beats.push([scene.id.toUpperCase(), scene.start]);
   writeFileSync(file, kinds[scene.id] ? libraryHtml(scene.id, kinds[scene.id]) : sceneHtml(scene.id, beats));
-  const start = Math.round(scene.start * fps), end = words.scenes[i + 1] ? Math.round(words.scenes[i + 1].start * fps) + 10 : total;
-  html = html.replace('<!-- @scenes', `<div id="${comp}" class="scene" data-composition-id="${comp}" data-composition-src="compositions/${comp}.html" data-start="${(start / fps).toFixed(6)}" data-duration="${((Math.min(end, total) - start) / fps).toFixed(6)}" data-track-kind="graphics" data-width="${W}" data-height="${H}"></div>\n      <!-- @scenes`);
+  const { start, end } = spans[i];
+  html = html.replace('<!-- @scenes', `<div id="${comp}" class="scene" data-composition-id="${comp}" data-composition-src="compositions/${comp}.html" data-start="${(start / fps).toFixed(6)}" data-duration="${((end - start) / fps).toFixed(6)}" data-track-kind="graphics" data-width="${W}" data-height="${H}"></div>\n      <!-- @scenes`);
   made.push(scene.id);
 });
 writeFileSync(index, html);
@@ -122,7 +123,7 @@ const cueFile = path.join(dir, 'cues.json');
 if (!existsSync(cueFile)) {
   const big = new Set([hookLast, endFirst].filter(Boolean));
   const cues = [
-    ...words.scenes.map((s) => ({ t: Math.max(0, s.start - 0.15), sfx: 'whoosh', vol: 0.22 })),
+    ...words.scenes.map((s) => ({ scene: s.id, offset: -0.15, sfx: 'whoosh', vol: 0.22 })),
     ...anchors.map((a, i) => (big.has(a) ? { at: ref(a), sfx: 'impact-bass-1', vol: 0.4 } : { at: ref(a), sfx: i % 2 ? 'pop' : 'click-soft', vol: 0.22 })),
   ];
   writeJson(cueFile, { bed: { key: 'A', mode: 'minor', bpm: 100 }, cues });

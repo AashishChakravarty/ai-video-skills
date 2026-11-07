@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { contactSheet, loadReel, loudness, probeVideo } from './lib.mjs';
+import { contactSheet, loadReel, loudness, probeVideo, readJson, staleAnchors } from './lib.mjs';
 
 const { values: opt, positionals } = parseArgs({ allowPositionals: true, options: { nosubs: { type: 'boolean' }, 'skip-check': { type: 'boolean' }, reel: { type: 'string' } } });
 const version = positionals[0];
@@ -19,6 +19,9 @@ const r = loadReel(opt.reel);
 const dir = r.file('build', version);
 if (!existsSync(path.join(dir, 'index.html'))) throw new Error(`build/${version} is not scaffolded`);
 if (!existsSync(path.join(dir, 'assets/mix.wav'))) throw new Error(`build/${version}/assets/mix.wav missing; run node mix.mjs ${version}`);
+
+const stale = opt['skip-check'] || !existsSync(r.file('anchors.json')) ? [] : staleAnchors(dir, readJson(r.file('anchors.json')));
+if (stale.length) throw new Error(`build/${version} uses anchors that anchors.json no longer has (a script edit or re-align moved them), so those scenes would break at load:\n  ${stale.join('\n  ')}\nPoint them at current @beats (script.timed.md), or add the beat back to script.md and run script.mjs time.`);
 
 const npm = (args) => spawnSync('npm', args, { cwd: dir, stdio: 'inherit' }).status;
 if (!opt['skip-check'] && npm(['run', '--silent', 'check']) !== 0) throw new Error(`hyperframes check failed for build/${version}; fix the errors above, then render again`);

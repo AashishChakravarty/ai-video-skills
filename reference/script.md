@@ -61,6 +61,16 @@ carries a fact the viewer acts on:
 | fix | exact versions, stopgaps, a tool to check | "Update करो eight point five point twelve…" |
 | cta | the action in two words, then the follow line | "आज ही।" |
 
+### A scenario the viewer lives
+
+- The example must be something the audience does on that day: on Diwali people are home with family, so the
+  payment goes to a crowded mithai shop, not to mummy. Ask "would they really be doing this then?" before writing
+  the hook.
+- For a festival or event, prefer numbers for the whole festival (the three days from Dhanteras to Diwali) over a
+  record on one side day, and name the festival the viewer thinks of.
+- When the scenario changes, re-check every rule the script states for it: a shop payment is refunded within T+5,
+  a transfer to a person by T+1 (RBI's failed-transaction rules differ by payment type).
+
 ### Voice and rhythm
 
 Write for the ear, like someone who knows the subject explaining it to a friend — teach, don't report:

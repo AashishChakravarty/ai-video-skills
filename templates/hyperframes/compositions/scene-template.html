@@ -1,13 +1,16 @@
 <!--
   scene-id: <what this scene shows and which object it hands to the next scene> (script scene [scene-id]).
-  Copy to compositions/<id>.html, replace every "scene-id", and add its host to index.html at @scenes with
-  data-start = START / fps and data-duration = (END - START) / fps; replace SCENE with the script scene id ([hook]). Build every word and object with window.Design
-  (type scale, grid, icons, step flows): never set a font size by hand.
+  Copy to compositions/<id>.html, replace every "scene-id", and add its host to index.html at @scenes (any
+  data-start/data-duration: scaffold.mjs --sync sets them from the timing, START to END below); replace SCENE with the
+  script scene id ([hook]). Build every word and object with window.Design (type scale, grid, icons, step flows, phone
+  and ui for app screens): never set a font size by hand.
 -->
 <template>
   <style>
     @font-face { font-family: "Reel Sans"; font-weight: 800; src: url("assets/fonts/reel-sans.ttf"); }
     @font-face { font-family: "Reel Mono"; font-weight: 700; src: url("assets/fonts/reel-mono.ttf"); }
+    @font-face { font-family: "Reel Sans"; font-weight: 400; src: url("assets/fonts/reel-sans-400.ttf"); }
+    @font-face { font-family: "Reel Mono"; font-weight: 400; src: url("assets/fonts/reel-mono-400.ttf"); }
     #root { position: absolute; inset: 0; overflow: hidden; font-family: "Reel Sans", sans-serif; font-weight: 800; }
     #scene-id-cam { position: absolute; inset: 0; }
     #root .ln { position: absolute; left: 0; right: 0; text-align: center; white-space: pre; line-height: 1; opacity: 0; }
@@ -20,7 +23,8 @@
   <script>
     (function () {
       const K = window.ReelKit, U = window.Design, { F, prog, ease } = K;
-      const sc = K.scene("SCENE"), START = F(sc.start), END = F(sc.end) + 10;
+      const sc = K.scene("SCENE"), NX = K.REEL.scenes[K.REEL.scenes.indexOf(sc) + 1];
+      const START = F(sc.start), END = NX ? F(NX.start) + 10 : F(K.DUR);
       const BEAT = F(K.anchor("SCENE", "word"));
       const cam = document.getElementById("scene-id-cam"), top = document.getElementById("scene-id-top");
       const title = U.text(top, "scene-id-title", "TITLE", { kind: "title", cy: U.GRID.title });

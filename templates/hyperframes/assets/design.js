@@ -3,7 +3,8 @@
  * a reel. A type scale (T: hero 96, title 64, stamp 56, label 40, chip 30 mono, note 28), a layout grid (GRID), text
  * and chip helpers that only take type-scale kinds, line icons (hacker with a hat, user, laptop, container, signer,
  * key, contract, wallets), icon boxes, vertical step flows (flowRow + flowLink), a terminal window with small mono
- * text, a map pin, and the low-level DOM/SVG helpers. Exposed as window.Design; load after reel-kit.js. A version's
+ * text, a map pin, a realistic phone with app-UI text (phone, ui: regular weight, 28 px floor), and the low-level
+ * DOM/SVG helpers. Exposed as window.Design; load after reel-kit.js. A version's
  * own assets/diagram.js adds its topic objects (hero card, safe, ...) on top of it. The grid, the default text centre
  * (CX) and the flow positions follow the reel's format, so a scene that reads them re-lays itself for the 16:9 cut.
  */
@@ -411,8 +412,61 @@
     };
   }
 
+  /** App-screen text sizes inside a phone: xs is the 28 px legibility floor at 1080 wide. */
+  const UI = { xs: 28, s: 30, m: 34, l: 48, xl: 64 };
+
+  /**
+   * Text on an app screen: a UI size, regular weight unless bold (the 400 fonts every composition declares), visible at
+   * once; left-, right- or centre-aligned from left / right / x. Sentence case, like a real app.
+   */
+  function ui(parent, id, str, { k = "xs", x, left, right, cy, w = 280, bold = false, mono = false, color = C.text }) {
+    const align = left != null ? "left" : right != null ? "right" : "center";
+    const cx = left != null ? left + w / 2 : right != null ? right - w / 2 : x;
+    const n = line(parent, id, str, { x: cx, cy, size: UI[k], mono, color, w, align });
+    n.style.fontWeight = bold ? (mono ? "700" : "800") : "400";
+    n.style.opacity = "1";
+    return n;
+  }
+
+  /** An icon from ICONS drawn s px square, centred on (x, y) inside parent (an avatar, a notification's app icon). */
+  function glyph(parent, id, icon, s, x, y) {
+    const v = attrs(mk(parent, "svg:svg", id), { width: s, height: s, viewBox: "-60 -60 120 120" });
+    Object.assign(v.style, { position: "absolute", left: px(x - s / 2), top: px(y - s / 2) });
+    ICONS[icon](mk(v, "svg:g", null));
+    return v;
+  }
+
+  /**
+   * A modern phone (w × h, centred on (x, y)): dark frame, side keys, Dynamic Island, status bar (9:41, signal,
+   * battery) and home bar. Build the app inside `screen` (sw × sh, top-left origin; content from y ≈ 60, above
+   * sh − 30) with ui() and glyph(); pose `el` to move it. 340 × 690 fits two side by side in portrait.
+   */
+  function phone(parent, id, { x, y, w = 340, h = 690 }) {
+    const BEZ = 10, sw = w - 2 * BEZ, sh = h - 2 * BEZ, FRAME = "#1D1B24", INK = C.white;
+    const o = mk(parent, "div", id, { left: px(x - w / 2), top: px(y - h / 2), width: px(w), height: px(h), transformOrigin: "50% 50%" });
+    for (const [side, top, len] of [["left", 130, 40], ["left", 196, 66], ["left", 276, 66], ["right", 220, 96]]) {
+      mk(o, "div", null, { [side]: "-5px", top: px(top), width: "8px", height: px(len), borderRadius: "4px", background: mix(FRAME, "#FFFFFF", 0.3) });
+    }
+    mk(o, "div", null, {
+      left: "0px", top: "0px", width: px(w), height: px(h), borderRadius: "58px", boxShadow: K.shadow(1.6),
+      background: `linear-gradient(145deg, ${mix(FRAME, "#FFFFFF", 0.28)}, ${FRAME} 35%, ${FRAME} 75%, ${mix(FRAME, "#FFFFFF", 0.18)})`,
+    });
+    const screen = mk(o, "div", `${id}-screen`, { left: px(BEZ), top: px(BEZ), width: px(sw), height: px(sh), borderRadius: "48px", background: K.surface, overflow: "hidden" });
+    mk(screen, "div", null, { left: px(sw / 2 - 50), top: "12px", width: "100px", height: "30px", borderRadius: "15px", background: "#0B0A0F" });
+    ui(screen, `${id}-time`, "9:41", { k: "xs", left: 30, w: 80, cy: 28, bold: true, color: INK });
+    const st = attrs(mk(screen, "svg:svg", null), { width: 78, height: 24, viewBox: "0 0 78 24" });
+    Object.assign(st.style, { position: "absolute", left: px(sw - 104), top: "16px" });
+    for (let i = 0; i < 4; i++) attrs(mk(st, "svg:rect", null), { x: i * 7, y: 16 - i * 4, width: 5, height: 6 + i * 4, rx: 1.2, fill: INK });
+    attrs(mk(st, "svg:rect", null), { x: 36, y: 3, width: 34, height: 18, rx: 5, fill: "none", stroke: rgba(INK, 0.45), "stroke-width": 2 });
+    attrs(mk(st, "svg:rect", null), { x: 39, y: 6, width: 24, height: 12, rx: 2.5, fill: INK });
+    attrs(mk(st, "svg:rect", null), { x: 72, y: 9, width: 3, height: 6, rx: 1.5, fill: rgba(INK, 0.45) });
+    mk(screen, "div", null, { left: px(sw / 2 - 60), top: px(sh - 18), width: "120px", height: "6px", borderRadius: "3px", background: rgba(INK, 0.85) });
+    return { el: o, screen, sw, sh };
+  }
+
   window.Design = {
     C, CX, CAP_MID, GRID, T, mk, attrs, svgAt, mix, pose, line, chip, stamp, wire, ring, logoSvg, num, bez, breath,
     text, tag, ICONS, ICON, FLOW_X, FLOW_TEXT, iconBox, lightBox, flowRow, flowLink, esc, winBar, terminal, mapPin,
+    UI, ui, glyph, phone,
   };
 })();

@@ -7,19 +7,22 @@
  *
  *   node tts.mjs --engine voicestudio|chatterbox|say [--voice id|ref.wav|SayVoice] [--sample] [--scene id …]
  *                [--speed 1] [--seed 7] [--quality 16] [--instruct "indian accent"] [--gap 0.35] [--tail 1.5]
+ *   node tts.mjs --scene pending --seeds 7,42,99    (one take per seed, scored with align.py --score; keeps the cleanest)
  *   node tts.mjs --engine file --input my-recording.m4a           (whole reel, e.g. an ElevenLabs export)
  *   node tts.mjs --engine file --scene hook --input hook.mp3      (one scene; stitches once all scenes have takes)
  *   node tts.mjs --engine voicestudio|say --voices
  *
  * --sample renders only the opening sentence to audio/samples/<engine>-<voice>[-<instruct>]-x<speed>-s<seed>.wav for
- * picking a voice; --scene re-takes just those scenes and re-stitches. --tail pads silence after the last word so the
- * end card can hold. --speed and --seed default to the config's tts.speed and tts.seed. VoiceStudio is the local OmniVoice app (opened if not
+ * picking a voice; --scene re-takes just those scenes and re-stitches (reel.json keeps the base settings and notes each
+ * re-taken scene's own under tts.takes). Each take's text is saved next to it (audio/takes/<id>.txt); stitching
+ * refuses a take whose text no longer matches vo.txt and its respellings, so an old take is never joined in. --tail
+ * pads silence after the last word so the end card can hold. --speed and --seed default to the config's tts.speed and tts.seed. VoiceStudio is the local OmniVoice app (opened if not
  * running); a --voice that is an audio file clones that voice on the fly (VoiceStudio and Chatterbox).
  * Stitching cuts a take's leading stall (a faint breath, then a pause before the first word), prints each scene's
  * length and its pauses of 0.3 s or more, and the measured speaking rate against the config's wordsPerSecond.
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { CONFIG, SKILL, exaggerationFor, ffmpeg, forEngine, loadPronounce, loadReel, loudness, normalize, parseVo, probeDuration, run, speakable } from './lib.mjs';
@@ -33,6 +36,7 @@ const { values: opt } = parseArgs({
     input: { type: 'string' },
     speed: { type: 'string', default: String(CONFIG.tts.speed ?? 1) },
     seed: { type: 'string', default: String(CONFIG.tts.seed ?? 7) },
+    seeds: { type: 'string' },
     quality: { type: 'string', default: '16' },
     instruct: { type: 'string' },
     gap: { type: 'string', default: '0.35' },
@@ -178,7 +182,7 @@ async function render(raw) {
     if (unvoiced.length) console.log(`${opt.engine}: [${job.id}] cannot voice ${unvoiced.map((d) => `[${d}]`).join(' ')} — delivery follows punctuation; add sound effects as SFX cues`);
     return { id: job.id, out: job.out, text: t.text, exaggeration: exaggerationFor(t.style) };
   });
-  if (opt.engine === 'chatterbox') return chatterboxTakes(jobs);
+  if (opt.engine === 'chatterbox') return chatterboxTakes(jobs).then(() => keepTexts(raw));
   if (opt.engine === 'voicestudio') await voicestudioUp();
   for (const job of jobs) {
     process.stdout.write(`${opt.engine}: [${job.id}] ${job.text.slice(0, 60)}…\n`);
@@ -186,6 +190,23 @@ async function render(raw) {
     else if (opt.engine === 'say') sayTake(job.text, job.out);
     else throw new Error(`unknown --engine ${opt.engine}; use voicestudio, chatterbox, say or file`);
   }
+  keepTexts(raw);
+}
+
+/** Where a take's source text is kept: audio/takes/<id>.txt next to audio/takes/<id>.wav. */
+const textFile = (take) => take.replace(/\.wav$/, '.txt');
+
+/** Saves the exact text each take was made from (respellings and tags included), for stitch()'s staleness check. */
+function keepTexts(jobs) {
+  for (const job of jobs) if (job.id !== 'sample') writeFileSync(textFile(job.out), job.text);
+}
+
+/** align.py --score for one take: { unclear: [[word, at, match]], mean } — fewer unclear words and a higher mean is cleaner. */
+function scoreTake(id, file) {
+  const res = spawnSync('uv', ['run', '-q', path.join(SKILL, 'scripts/align.py'), '--audio', file, '--vo', r.file('vo.txt'), '--score', id], { encoding: 'utf8' });
+  const line = res.stdout.trim().split('\n').at(-1);
+  if (res.status !== 0 || !line?.startsWith('{')) throw new Error(`align.py --score failed for ${file}: ${(res.stderr || '').trim().split('\n').at(-1)}`);
+  return JSON.parse(line);
 }
 
 /** Silences of at least `min` seconds in an audio file (below -38 dB), as [start, end] pairs in seconds. */
@@ -236,6 +257,11 @@ function stitch(scenes) {
   const takes = scenes.map((s) => r.file(`audio/takes/${s.id}.wav`));
   const missing = takes.filter((t) => !existsSync(t));
   if (missing.length) throw new Error(`missing takes: ${missing.map((m) => path.basename(m)).join(', ')}; render them with --scene`);
+  const known = scenes.filter((_, i) => existsSync(textFile(takes[i])));
+  const stale = known.filter((s) => readFileSync(textFile(r.file(`audio/takes/${s.id}.wav`)), 'utf8') !== speakable(s.text, pron)).map((s) => s.id);
+  if (stale.length) throw new Error(`take(s) made from older text (the script, a tag or a respelling changed since): ${stale.join(', ')}; re-take them: node tts.mjs --scene ${stale.join(' --scene ')}`);
+  const unknown = scenes.filter((s) => !known.includes(s)).map((s) => s.id);
+  if (unknown.length) console.log(`note: no record of the text behind the take(s) for ${unknown.join(', ')} (made before takes kept their text); if the script changed since, re-take them`);
   reportTakes(scenes, takes);
   const trim = 'silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse';
   const parts = takes.map((_, i) => `[${i}:a]aresample=48000,aformat=channel_layouts=mono,${trim}[t${i}]`);
@@ -247,9 +273,15 @@ function stitch(scenes) {
   rmSync(joined);
 }
 
-function record(settings) {
+/**
+ * Records the voice-over in reel.json. A full run sets tts (engine, voice, settings); a --scene run or a one-scene
+ * import keeps them and notes those scenes' own takes under tts.takes (`seeds` gives a scene its picked seed).
+ */
+function record(settings, ids = null, seeds = {}) {
   const duration = probeDuration(r.file('audio/vo.wav'));
-  r.reel.tts = { engine: opt.engine, voice: opt.voice ?? null, settings };
+  const run = { engine: opt.engine, voice: opt.voice ?? null };
+  if (!ids || !r.reel.tts) r.reel.tts = { ...run, settings, takes: {} };
+  for (const id of ids ?? []) r.reel.tts.takes = { ...r.reel.tts.takes, [id]: { ...run, ...settings, ...(seeds[id] != null ? { seed: seeds[id] } : {}) } };
   r.reel.audio = { vo: 'audio/vo.wav', duration: Number(duration.toFixed(3)), frames: Math.ceil(duration * (r.reel.fps ?? 30)) };
   r.reel.stage = 'audio';
   r.save();
@@ -280,7 +312,9 @@ if (opt.engine === 'file') {
   if (!opt.input || !existsSync(opt.input)) throw new Error('--engine file needs --input <audio file>');
   if (opt.scene?.length) {
     if (opt.scene.length > 1 || !scenes.some((s) => s.id === opt.scene[0])) throw new Error(`--scene takes one scene id: ${scenes.map((s) => s.id).join(', ')}`);
-    ffmpeg(['-i', opt.input, '-ac', '1', '-ar', '48000', r.file(`audio/takes/${opt.scene[0]}.wav`)]);
+    const take = r.file(`audio/takes/${opt.scene[0]}.wav`);
+    ffmpeg(['-i', opt.input, '-ac', '1', '-ar', '48000', take]);
+    writeFileSync(textFile(take), speakable(scenes.find((s) => s.id === opt.scene[0]).text, pron));
     const missing = scenes.filter((s) => !existsSync(r.file(`audio/takes/${s.id}.wav`))).map((s) => s.id);
     if (missing.length) {
       console.log(`take for [${opt.scene[0]}] saved; still needed: ${missing.join(', ')}`);
@@ -293,7 +327,7 @@ if (opt.engine === 'file') {
     normalize(trimmed, r.file('audio/vo.wav'), { target: -16, channels: 1 });
     rmSync(trimmed);
   }
-  record({ input: path.resolve(opt.input) });
+  record({ input: path.resolve(opt.input) }, opt.scene?.length ? opt.scene : null);
   process.exit(0);
 }
 const settings = { speed: Number(opt.speed), seed: Number(opt.seed), quality: Number(opt.quality), instruct, gap: Number(opt.gap), tail: Number(opt.tail) };
@@ -311,6 +345,29 @@ if (opt.sample) {
 
 const wanted = opt.scene?.length ? scenes.filter((s) => opt.scene.includes(s.id)) : scenes;
 if (opt.scene?.length && wanted.length !== opt.scene.length) throw new Error(`unknown --scene; scenes are ${scenes.map((s) => s.id).join(', ')}`);
-await render(wanted.map((s) => ({ id: s.id, text: speakable(s.text, pron), out: r.file(`audio/takes/${s.id}.wav`) })));
+const picked = {};
+if (opt.seeds) {
+  if (!opt.scene?.length) throw new Error('--seeds picks among takes of the scenes named with --scene');
+  const seeds = opt.seeds.split(',').map((x) => x.trim()).filter(Boolean);
+  for (const s of wanted) {
+    const tries = [];
+    for (const seed of seeds) {
+      opt.seed = seed;
+      const out = r.file(`audio/takes/alt/${s.id}-s${seed}.wav`);
+      mkdirSync(path.dirname(out), { recursive: true });
+      await render([{ id: s.id, text: speakable(s.text, pron), out }]);
+      tries.push({ seed: Number(seed), out, ...scoreTake(s.id, out) });
+    }
+    tries.sort((a, b) => a.unclear.length - b.unclear.length || b.mean - a.mean);
+    for (const t of tries) console.log(`  [${s.id}] seed ${t.seed}: match ${t.mean.toFixed(3)}, unclear ${t.unclear.map(([w, at, m]) => `${w}@${at}s (${m})`).join(', ') || 'none'}${t === tries[0] ? '  ← kept' : ''}`);
+    const take = r.file(`audio/takes/${s.id}.wav`);
+    cpSync(tries[0].out, take);
+    cpSync(textFile(tries[0].out), textFile(take));
+    picked[s.id] = tries[0].seed;
+  }
+  console.log('kept the take with the fewest unclear words per scene (others in audio/takes/alt/); a dropped word can still score well, so listen to the kept takes');
+} else {
+  await render(wanted.map((s) => ({ id: s.id, text: speakable(s.text, pron), out: r.file(`audio/takes/${s.id}.wav`) })));
+}
 stitch(scenes);
-record(settings);
+record(settings, opt.scene?.length ? wanted.map((s) => s.id) : null, picked);

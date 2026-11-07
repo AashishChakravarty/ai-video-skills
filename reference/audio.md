@@ -117,6 +117,32 @@ then `audio-script.txt` is ready for any TTS (Indian English: "डाटा" not
 voice-overs need this only for odd terms (`kubectl` → "cube control"). For one wrong word after the voice is
 made, `pronounce.mjs set` it and re-take only the scenes that use it with `--scene`.
 
+**A respelling the voice shortens.** Hindi voices drop a short "a" (schwa) in the middle of a word, the way Hindi
+does in its own words, so a respelling can still come out wrong: स्टेटस is read "stats". Write that vowel out
+with अ after the consonant, स्टेटअस, which the voice reads as स्टेटस; a final halant (स्टेटस्) or a space
+(स्टे टस) did not help. Words of the same shape (bonus, campus, virus) may do it too; check a respelled word by
+ear, or by transcript (it should come back as "status", not "state spending").
+
+## When a take breaks (slurred, dropped or misread words)
+
+The same text and voice can come out clean with one seed and slurred with another ("NPCI और banks" garbled,
+"साढ़े" swallowed). Re-take the scene with several seeds and keep the cleanest:
+
+```bash
+node tts.mjs --scene pending --seeds 7,42,99      # takes in audio/takes/alt/, each scored, the best kept + stitched
+uv run align.py --audio audio/takes/alt/pending-s7.wav --vo vo.txt --score pending   # one take's score, as JSON
+```
+
+The score is the aligner's match for each word: a misread word ("status" said as "stats") or a garbled one scores
+near 0 and the take's mean drops. English words in Latin script score low in every take ("bank" against "बैंक"),
+so scores compare takes of the same scene, never two scenes. A swallowed word can still score well: listen to the
+kept take. reel.json records the base voice settings under `tts` and each re-taken scene's own (its seed) under
+`tts.takes`.
+
+Each take keeps the exact text it was made from (`audio/takes/<id>.txt`, respellings and tags included).
+Stitching refuses a take whose text no longer matches vo.txt and the respellings, so a line moved to another scene
+can't be voiced twice; re-take the scenes it names.
+
 ## Gate 2 — audio approval
 
 Give the user `audio/vo.wav`, the duration vs target and the per-scene report from tts.mjs (lengths and pauses).

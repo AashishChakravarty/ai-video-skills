@@ -166,6 +166,8 @@ Also test:
 | Chatterbox `'NoneType' object is not callable` | outdated cached env: `uv cache clean chatterbox-tts` and run again |
 | A number sounds wrong ("8.5.12", "70%") | write it as spoken words in `VO:` (eight point five point twelve, seventy percent); `script.mjs vo` lists any numerals left |
 | `aligner changed the text` | unusual characters in the VO line (emoji, smart symbols) — remove them and re-run `script.mjs vo` |
+| `take(s) made from older text` | the script, a tag or a respelling changed after that take was made — re-take the scenes it names (`tts.mjs --scene …`) |
+| `anchor reference(s) no longer exist` / render refuses | a scene, direction.js or cues.json still uses an `@beat` the script dropped or renamed — point it at a current beat (script.timed.md) |
 | `anchors not found` | the `@word` isn't in that scene's narration (check spelling, or use `@{two words}`) |
 | `check` fails with *missing_local_asset* | a `<video>` points at a clip that wasn't rendered — run `render-clips.mjs` in `build/<v>/remotion` |
 | Boxes instead of letters | the language's script isn't in the configured font — set `fonts.sans` to a TTF that covers it |

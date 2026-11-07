@@ -42,6 +42,43 @@ export function writeJson(file, data) {
   writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
 }
 
+/**
+ * Frame span of each scene's host: from the scene's first word to 10 frames into the next scene (the hand-off
+ * overlap); the last scene runs to `total`.
+ */
+export function sceneSpans(scenes, fps, total) {
+  return scenes.map((s, i) => ({
+    id: s.id,
+    start: Math.round(s.start * fps),
+    end: Math.min(scenes[i + 1] ? Math.round(scenes[i + 1].start * fps) + 10 : total, total),
+  }));
+}
+
+/**
+ * Anchor references in build/<v> that anchors.json no longer has, as ["file: scene/token#n", …]: A(scene, token[, n])
+ * in direction.js, K.anchor(scene, token[, n]) and one-scene helpers (`const at = (tok) => F(K.anchor("hook", tok))`,
+ * then at("कट")) in compositions, and every cue "at" in cues.json. A stale one throws at page load or in mix.mjs.
+ */
+export function staleAnchors(dir, anchors) {
+  const has = (scene, token, n = 0) => anchors.filter((a) => a.scene === scene && a.token === token).length > n;
+  const missing = [];
+  const check = (file, refs) => refs.forEach(([scene, token, n = 0]) => has(scene, token, n) || missing.push(`${file}: ${scene}/${token}${n ? `#${n}` : ''}`));
+  const scan = (file, text) => {
+    const refs = [...text.matchAll(/\b(?:A|anchor)\(\s*(["'])([\w-]+)\1\s*,\s*(["'])(.+?)\3\s*(?:,\s*(\d+))?\s*\)/g)].map((m) => [m[2], m[4], Number(m[5] ?? 0)]);
+    for (const h of text.matchAll(/const (\w+) = \((\w+)(?:,\s*(\w+)(?:\s*=\s*\d+)?)?\) =>[^\n]*?anchor\(\s*(["'])([\w-]+)\4\s*,\s*\2\s*(?:,\s*\3)?\s*\)/g)) {
+      for (const c of text.matchAll(new RegExp(`\\b${h[1]}\\(\\s*(["'])(.+?)\\1\\s*(?:,\\s*(\\d+))?\\s*\\)`, 'g'))) refs.push([h[5], c[2], Number(c[3] ?? 0)]);
+    }
+    check(file, refs);
+  };
+  const direction = path.join(dir, 'assets/direction.js');
+  if (existsSync(direction)) scan('assets/direction.js', readFileSync(direction, 'utf8'));
+  const comps = path.join(dir, 'compositions');
+  for (const name of existsSync(comps) ? readdirSync(comps).filter((n) => n.endsWith('.html') && n !== 'scene-template.html') : []) scan(`compositions/${name}`, readFileSync(path.join(comps, name), 'utf8'));
+  const cues = path.join(dir, 'cues.json');
+  if (existsSync(cues)) check('cues.json', (readJson(cues).cues ?? []).filter((c) => c.at).map((c) => c.at));
+  return missing;
+}
+
 /** A key=value value: JSON when it parses (2.4, true, ["a"]), otherwise the string itself. */
 export function parseValue(value) {
   try {

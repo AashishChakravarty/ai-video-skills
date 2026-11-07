@@ -6,13 +6,14 @@
  *   node scaffold.mjs <version> --sync [--reel dir]
  *
  * --from copies another version's scenes, direction and clip list (for the 16:9 cut of the picked version);
- * --sync only rewrites reel-data.js, the logos, fonts, theme and every full-length duration (after a re-take,
- * re-align or theme.mjs apply), never touching scenes or direction.js.
+ * --sync only rewrites reel-data.js, the logos, fonts, theme, every full-length duration and each scene host's span
+ * (after a re-take, re-align or theme.mjs apply), never touching scene files or direction.js; it also lists anchor
+ * references in direction.js, the scenes and cues.json that the new timing no longer has.
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { CONFIG, SKILL, configPath, loadReel, readJson } from './lib.mjs';
+import { CONFIG, SKILL, configPath, loadReel, readJson, sceneSpans, staleAnchors } from './lib.mjs';
 
 const { values: opt, positionals } = parseArgs({
   allowPositionals: true,
@@ -72,11 +73,14 @@ function copyTemplate(src, dst) {
   }
 }
 
-/** Copies the reel's theme fonts in as reel-sans.ttf / reel-mono.ttf (the names every composition loads), GSAP, the logos and the data. */
+/**
+ * Copies the reel's theme fonts in as reel-sans.ttf / reel-mono.ttf (the names every composition loads) plus their
+ * regular weights for app-screen text (reel-sans-400.ttf / reel-mono-400.ttf), GSAP, the logos and the data.
+ */
 function sharedAssets() {
-  const fonts = r.reel.fonts ?? CONFIG.fonts;
+  const fonts = { ...CONFIG.fonts, ...r.reel.fonts };
   mkdirSync(path.join(dir, 'assets/fonts'), { recursive: true });
-  for (const [key, name] of [['sans', 'reel-sans.ttf'], ['mono', 'reel-mono.ttf']]) {
+  for (const [key, name] of [['sans', 'reel-sans.ttf'], ['mono', 'reel-mono.ttf'], ['sansRegular', 'reel-sans-400.ttf'], ['monoRegular', 'reel-mono-400.ttf']]) {
     const src = configPath(fonts[key]);
     if (!existsSync(src)) throw new Error(`font ${fonts[key]} (reel.json fonts.${key}) not found`);
     cpSync(src, path.join(dir, 'assets/fonts', name));
@@ -106,12 +110,29 @@ function syncDurations() {
   }
 }
 
+/** Moves each scene host (id="scene-<scene id>") to its scene's current span, so new timing never leaves a host behind. */
+function syncScenes() {
+  const index = path.join(dir, 'index.html');
+  let html = readFileSync(index, 'utf8'), moved = 0;
+  for (const { id, start, end } of sceneSpans(words.scenes, fps, frames)) {
+    html = html.replace(new RegExp(`<div id="scene-${id}"[^>]*>`), (tag) => {
+      moved++;
+      return tag.replace(/data-start="[^"]*"/, `data-start="${(start / fps).toFixed(6)}"`).replace(/data-duration="[^"]*"/, `data-duration="${((end - start) / fps).toFixed(6)}"`);
+    });
+  }
+  writeFileSync(index, html);
+  return moved;
+}
+
 if (opt.sync) {
   if (!existing) throw new Error(`${dir} is not scaffolded yet; run without --sync`);
   sharedAssets();
   syncDurations();
   syncTheme();
-  console.log(`synced build/${version}: reel-data.js (${words.words.length} words, ${frames} frames), theme, logos, durations ${dur}s`);
+  const moved = syncScenes();
+  console.log(`synced build/${version}: reel-data.js (${words.words.length} words, ${frames} frames), theme, logos, durations ${dur}s, ${moved} scene spans`);
+  const stale = staleAnchors(dir, readJson(r.file('anchors.json')));
+  if (stale.length) console.log(`✗ ${stale.length} anchor reference(s) not in anchors.json (render.mjs refuses until fixed):\n  ${stale.join('\n  ')}`);
   process.exit(0);
 }
 

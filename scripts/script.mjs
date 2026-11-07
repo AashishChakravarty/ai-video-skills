@@ -17,10 +17,10 @@
  * The reel's own handle is never an anchor; write any other literal @ in on-screen text as \@. Each anchor also
  * records a label — the first "quoted" on-screen text after it on the line, else the word — for starter.mjs.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import path from 'node:path';
-import { CONFIG, SKILL, appliedFixes, forEngine, loadPronounce, loadReel, numerals, readJson, speakable, stripTags, unrespelled, writeJson } from './lib.mjs';
+import { CONFIG, SKILL, appliedFixes, forEngine, loadPronounce, loadReel, numerals, readJson, speakable, staleAnchors, stripTags, unrespelled, writeJson } from './lib.mjs';
 
 const WORDS_PER_SECOND = CONFIG.wordsPerSecond;
 
@@ -111,7 +111,7 @@ function timeScript(r) {
       let n = 0;
       out[line.index] = line.text.replace(TOKEN, (m, phrase, word, offset) => {
         const text = phrase ?? word, next = hits[++n]?.index ?? line.text.length;
-        const label = line.text.slice(offset + m.length, next).match(/"([^"]+)"/)?.[1] ?? text.replace(/[.,!?;:…।॥]+$/u, '').toUpperCase();
+        const label = (line.text.slice(offset + m.length, next).match(/"([^"]+)"/)?.[1] ?? text.replace(/[.,!?;:…।॥]+$/u, '').toUpperCase()).replaceAll('\\@', '@');
         if (`@${text}` === r.reel.handle) return m;
         const k = findPhrase(list, text, cursor);
         if (k < 0) {
@@ -131,6 +131,11 @@ function timeScript(r) {
   writeFileSync(r.file('script.timed.md'), out.join('\n'));
   writeJson(r.file('anchors.json'), anchors);
   console.log(`script.timed.md: ${anchors.length} anchors resolved across ${scenes.length} scenes; TOTAL_FRAMES ${frames}`);
+  const builds = existsSync(r.file('build')) ? readdirSync(r.file('build')).filter((v) => existsSync(r.file('build', v, 'index.html'))) : [];
+  for (const v of builds) {
+    const stale = staleAnchors(r.file('build', v), anchors);
+    if (stale.length) console.log(`✗ build/${v}: ${stale.length} anchor reference(s) no longer exist; fix before render:\n  ${stale.join('\n  ')}`);
+  }
 }
 
 const { values: opt, positionals } = parseArgs({ allowPositionals: true, options: { reel: { type: 'string' } } });

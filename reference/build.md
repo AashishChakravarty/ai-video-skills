@@ -65,6 +65,12 @@ of the frame, so neighbouring scenes draw the same object on the same frame and 
   spoken name, the active step lit) or two-column comparisons; code and alerts go in a large `terminal` with
   small mono text; the attacker is always the `hacker` icon (a user with a hat).
 - **No invented numbers**: illustrative values are symbolic ("NONCE n", "n+1"), never made-up digits.
+- **Phones and app screens look real**: `phone(parent, id, { x, y })` draws a modern phone (dark frame, side keys,
+  Dynamic Island, status bar, home bar; 340 × 690, two fit side by side in portrait at x 230 / 850, y 985). Build the
+  app inside `screen` with `ui()` — app-UI sizes `UI.xs` 28 (the legibility floor) to `UI.xl` 64, regular weight
+  unless `bold`, sentence case like a real app — and `glyph()` for 36–54 px icons. Show the real flow (Paying →
+  amount → Pay → Processing… → Pending, a bank notification under the island, a merchant's recent-payments list),
+  never a card with type-scale text and big icons standing in for a phone.
 
 ### More than one version (only when asked)
 
@@ -153,7 +159,12 @@ that uses them (the linter checks per file). Contrast ≥ 4.5:1 — the accent f
   numbers: if the voice is re-made, `script.mjs time` + `scaffold --sync` move every beat for free.
   `K.wordAt("crash", 30)` finds any spoken word after 30 s that is not a script anchor.
 - Scene compositions run on **local time**: `const f = START + Math.round(t * K.FPS)`, with
-  `START = K.F(K.scene(id).start)`. Overlap neighbouring scenes by ~10 frames so hand-offs can cross.
+  `START = K.F(K.scene(id).start)` and `END` = the next scene's start + 10 frames (the last scene: `K.DUR`), as in
+  scene-template.html; fade out against `END`, never against the scene's last word. The host in index.html spans
+  START to END: `scaffold.mjs --sync` sets it after every re-take or re-align.
+- A one-scene helper (`const at = (tok) => F(K.anchor("hook", tok))`, then `at("कट")`) is fine: the stale-anchor
+  check (script.mjs time, scaffold --sync, render.mjs) reads it like `K.anchor` and `A(...)`.
+- Scene-change whooshes in cues.json follow the scene: `{ "scene": "stack", "offset": -0.15, "sfx": "whoosh" }`.
 - Total frames = `ceil(duration × 30)` (scaffold writes it; render.mjs warns if the output differs).
 
 ## 6. direction.js (shared layers)
