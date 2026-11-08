@@ -143,7 +143,7 @@ Record `gates.version` and `picked` (`a` when there is one version).
 
 ## Stage 6 — 16:9 cut and publish pack
 
-Build the 16:9 cut of the picked version (build.md §11), write `publish/captions.md` from
+Build the 16:9 cut of the picked version (build.md §11; when the user skips it, set `reel.json → landscape: false`), write `publish/captions.md` from
 `reference/publish.md` (Instagram, TikTok and Facebook as short teasers), then `node $S/publish.mjs <v> --cover-at <s>`. Fix its TO FIX list, and finish
 with the file list, what to upload where, and the Instagram + YouTube Shorts captions inline. If the CTA promises
 a DM freebie ("comment KEYWORD"), build its notes PDF too (`templates/notes/notes.html` → `notes.mjs`,

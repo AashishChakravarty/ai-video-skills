@@ -2,7 +2,8 @@
  * publish.mjs: assembles the publish pack for the picked version in publish/ and verifies every file:
  *   <slug>-9x16.mp4          the reel (Instagram Reels, YouTube Shorts, TikTok, Facebook Reels, LinkedIn)
  *   <slug>-9x16-nosubs.mp4   same without burned-in captions (rendered here if out/<v>-nosubs.mp4 is missing)
- *   <slug>-16x9.mp4          the landscape cut, when out/<v>-16x9.mp4 exists
+ *   <slug>-16x9.mp4          the landscape cut, when out/<v>-16x9.mp4 exists (a missing cut is a TO FIX unless the
+ *                            reel is fast mode or reel.json sets "landscape": false)
  *   <slug>-16x9-nosubs.mp4   the landscape cut without burned-in captions (rendered here when missing)
  *   captions.srt / .vtt      subtitle uploads; cover-9x16.png and cover-16x9.jpg (1280x720), both taken from the
  *                            no-subtitle copies so covers never carry a caption
@@ -85,7 +86,7 @@ for (const name of files.filter((f) => f.endsWith('.mp4'))) {
   if (!v.audio) problems.push(`${name} has no audio`);
   if (r.reel.audio?.frames && Math.abs(v.frames - r.reel.audio.frames) > 1) problems.push(`${name}: ${v.frames} frames, expected ${r.reel.audio.frames}`);
 }
-if (!has16) problems.push(`no 16:9 cut yet (out/${version}-16x9.mp4) — scaffold ${version}-16x9 --from ${version}, re-lay the scenes out, mix, render`);
+if (!has16 && !r.reel.fast && r.reel.landscape !== false) problems.push(`no 16:9 cut yet (out/${version}-16x9.mp4) — scaffold ${version}-16x9 --from ${version}, re-lay the scenes out, mix, render`);
 
 writeJson(pub('manifest.json'), { slug, version, createdAt: new Date().toISOString(), files, videos: rows, problems });
 r.reel.publish = { version, files, problems };

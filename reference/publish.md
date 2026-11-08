@@ -9,7 +9,8 @@ node ~/.claude/skills/ai-video-skills/scripts/publish.mjs a --cover-at 1.4
 It copies the picked render, renders the no-subtitle copies if missing (9:16, and 16:9 when
 `out/a-16x9.mp4` exists), adds the 16:9 cut, writes `captions.srt` / `.vtt`, grabs the covers from the
 no-subtitle copies (a cover never shows a caption), length-checks `captions.md`, probes every video and prints
-a table plus a TO FIX list. Run it again after fixing anything.
+a table plus a TO FIX list. Run it again after fixing anything. A reel published 9:16 only (fast mode, or
+`"landscape": false` in reel.json when the user skips the 16:9 cut) is not asked for one.
 Pick `--cover-at` from a moment with the hook's biggest text on screen (check the contact sheet); it is
 the cover on profile grids and the Shorts shelf.
 
