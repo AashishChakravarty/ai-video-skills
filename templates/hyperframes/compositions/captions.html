@@ -30,8 +30,8 @@
       function build() {
         const meas = document.createElement("canvas").getContext("2d");
         meas.font = `800 ${cfg.size}px "Reel Sans"`;
-        // Words sit a space plus two highlight pads apart, so the pad under one word never crowds its neighbours.
-        const PAD = 14, gap = meas.measureText(" ").width + 2 * PAD;
+        // Words sit a space plus one highlight pad apart: only one word is lit at a time, so its pad still clears each neighbour by a space.
+        const PAD = 12, gap = meas.measureText(" ").width + PAD;
         const fits = (card) => card.length <= 4 && card.reduce((s, w) => s + meas.measureText(w.word).width, 0) + (card.length - 1) * gap <= cfg.maxW;
         const cards = [];
         for (const w of WORDS) {

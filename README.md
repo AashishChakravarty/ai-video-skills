@@ -54,18 +54,19 @@ Windows is untested.
 ## Install
 
 ```bash
+brew install node ffmpeg uv                                 # macOS prerequisites; on Linux, doctor.mjs prints the fixes
 git clone https://github.com/AashishChakravarty/ai-video-skills.git ~/code/ai-video-skills
 cd ~/code/ai-video-skills && npm install
 npx playwright install chromium                             # headless browser for compare.mjs labels and carousels
 claude plugin marketplace add ~/code/ai-video-skills         # the plugin runs from your clone
 claude plugin install ai-video-skills@ai-video-skills        # /ai-video-skills:reel and /ai-video-skills:carousel
-ln -s ~/code/ai-video-skills/shortcut ~/.claude/skills/ai-video-skills   # optional: the /ai-video-skills shortcut
+mkdir -p ~/.claude/skills && ln -s ~/code/ai-video-skills/shortcut ~/.claude/skills/ai-video-skills   # optional: the /ai-video-skills shortcut
 node scripts/config.mjs set handle=@yourhandle channel="Your Channel" language=en reelsRoot=~/reels
 node scripts/doctor.mjs                                     # checks everything and prints fixes
 ```
 
 Plugins, if missing: `claude plugin marketplace add heygen-com/hyperframes && claude plugin install hyperframes`
-and `claude plugin marketplace add remotion-dev/skills && claude plugin install remotion`.
+and `claude plugin marketplace add remotion-dev/claude-code-plugin && claude plugin install remotion`.
 
 The plugin is read from your clone, so edits and pulls apply in the next session (or after `/reload-plugins`).
 To update: `cd ~/code/ai-video-skills && git pull && npm install && node scripts/doctor.mjs`. Your settings and
@@ -105,7 +106,7 @@ node scripts/config.mjs set tts.voicestudioProfile=<id> "tts.instruct=indian acc
 ### Themes
 
 A theme is a named brand and look that new reels reuse: handle, channel, follow text and spoken follow line,
-channel logo, palette, fonts and background. Anything a theme leaves out comes from your settings above. Three
+channel logo, palette, fonts and background. Anything a theme leaves out comes from your settings above. Four
 starter themes ship in [`themes/`](themes): `midnight` (the default: purple night, dot field, accent from the topic),
 `terminal` (green on black with a blueprint grid), `alert` (near-black, red accent, soft glows; made for security
 news) and `paper` (light paper fading to lavender, indigo accent, white cards with soft shadows and a card

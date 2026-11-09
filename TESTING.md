@@ -98,7 +98,7 @@ render passes check (warnings only). In `out/a-contact.png`: a question bubble, 
 payment screen and a stamp, a big 10:02 that settles above two rolling counters, a four-layer stack, a step window
 with ticks, a funnel with a lock, and the COMMENT DESIGN card before the FOLLOW lockup.
 
-**Themes** (optional) — `node $S/theme.mjs` lists `midnight`, `terminal` and `alert`. Switch this reel and build
+**Themes** (optional) — `node $S/theme.mjs` lists `midnight`, `terminal`, `alert` and `paper`. Switch this reel and build
 another version in that look:
 
 ```bash

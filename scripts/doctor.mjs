@@ -47,7 +47,7 @@ const plugins = path.join(HOME, '.claude/plugins/marketplaces');
 add('required', 'HyperFrames plugin', existsSync(path.join(plugins, 'hyperframes/skills/hyperframes')), 'skills /hyperframes, /media-use …', 'claude plugin marketplace add heygen-com/hyperframes && claude plugin install hyperframes (reference/build.md §12 if git-lfs blocks the clone)');
 const sfx = sfxDir();
 add('required', 'SFX library', Boolean(sfx), sfx ?? 'none found', 'install the HyperFrames plugin, or set sfxDir in your config to a folder of .mp3 sound effects');
-add('optional', 'Remotion plugin (3D clips)', existsSync(path.join(plugins, 'remotion')), 'skills /remotion-best-practices …', 'claude plugin marketplace add remotion-dev/skills && claude plugin install remotion');
+add('optional', 'Remotion plugin (3D clips)', existsSync(path.join(plugins, 'remotion')), 'skills /remotion-best-practices …', 'claude plugin marketplace add remotion-dev/claude-code-plugin && claude plugin install remotion');
 add('required', 'Whisper large-v3 (align)', dirSize(path.join(HUB, 'models--Systran--faster-whisper-large-v3')) > 2.5, 'faster-whisper, ~2.9 GB', 'downloads automatically on the first align.py run (needs ~3 GB and a network)');
 
 let vsUp = false;

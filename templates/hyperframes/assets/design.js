@@ -375,6 +375,7 @@
         o.style.opacity = String(clamp(alpha));
         o.style.transform = `scale(${s.toFixed(4)})`;
         o.style.borderColor = K.lit(glow, 0.6);
+        body.style.setProperty("--caret", clamp(caret).toFixed(2));
         let left = Math.floor(typed), html = "", placed = false;
         for (const segs of lines) {
           let row = "";
@@ -385,7 +386,7 @@
             row += `<span style="color:${col}">${esc(part)}</span>`;
           }
           if (!placed && left <= 0) {
-            row += `<span style="display:inline-block;width:0.55em;height:0.9em;vertical-align:-0.12em;background:${C.accent};opacity:${clamp(caret).toFixed(2)}"></span>`;
+            row += `<span style="display:inline-block;width:0.55em;height:0.9em;vertical-align:-0.12em;background:${C.accent};opacity:var(--caret)"></span>`;
             placed = true;
           }
           html += `<div>${row || "&nbsp;"}</div>`;
