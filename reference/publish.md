@@ -3,7 +3,7 @@
 ## Assemble
 
 ```bash
-node ~/.claude/skills/ai-video-skills/scripts/publish.mjs a --cover-at 1.4
+node $S/publish.mjs a --cover-at 1.4
 ```
 
 It copies the picked render, renders the no-subtitle copies if missing (9:16, and 16:9 when
@@ -101,9 +101,9 @@ Chapters:
 A "comment KEYWORD" CTA promises a freebie, so make it before posting: a detailed notes document, not a poster.
 
 ```bash
-mkdir -p notes && cp ~/.claude/skills/ai-video-skills/templates/notes/notes.html notes/<slug-topic>.html
+mkdir -p notes && cp $R/templates/notes/notes.html notes/<slug-topic>.html
 # replace the CAPS placeholders and example blocks with the topic, then:
-node ~/.claude/skills/ai-video-skills/scripts/notes.mjs <slug-topic>     # → publish/<slug-topic>.pdf (A4)
+node $S/notes.mjs <slug-topic>     # → publish/<slug-topic>.pdf (A4)
 ```
 
 - **Readable first**: white pages and dark text (the template); keep gradients and grids for the video.

@@ -1,0 +1,11 @@
+{
+  "name": "ai-video-skills",
+  "owner": { "name": "Aashish Chakravarty" },
+  "plugins": [
+    {
+      "name": "ai-video-skills",
+      "source": "./",
+      "description": "Short tech explainer reels and Instagram carousels: /ai-video-skills:reel and /ai-video-skills:carousel."
+    }
+  ]
+}

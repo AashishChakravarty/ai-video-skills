@@ -1,6 +1,6 @@
 # Voice-over and words (stages 3–4)
 
-Commands run from `~/.claude/skills/ai-video-skills/scripts` with `--reel <reel folder>` (or from inside the reel
+Commands run from `$S` with `--reel <reel folder>` (or from inside the reel
 folder). The language comes from the reel (set from the config's `language` when the reel was created); the
 default local engine is `tts.default` in the config.
 

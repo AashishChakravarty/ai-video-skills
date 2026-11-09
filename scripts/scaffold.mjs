@@ -60,7 +60,7 @@ function fill(text) {
   return text
     .replaceAll('{{W}}', W).replaceAll('{{H}}', H).replaceAll('{{DUR}}', dur).replaceAll('{{FORMAT}}', format)
     .replaceAll('{{VERSION}}', version).replaceAll('{{TITLE}}', r.reel.title).replaceAll('{{SLUG}}', r.reel.slug)
-    .replaceAll('{{BG}}', r.reel.palette.bg).replaceAll('{{LANG}}', r.reel.language ?? CONFIG.language);
+    .replaceAll('{{BG}}', r.reel.palette.bg).replaceAll('{{SKILL}}', SKILL).replaceAll('{{LANG}}', r.reel.language ?? CONFIG.language);
 }
 
 function copyTemplate(src, dst) {

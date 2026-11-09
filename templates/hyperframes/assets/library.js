@@ -1,5 +1,5 @@
 /**
- * library.js: ready-made scenes for fast mode (SKILL.md "Fast mode"). starter.mjs writes a scene file that calls
+ * library.js: ready-made scenes for fast mode (skills/reel/SKILL.md "Fast mode"). starter.mjs writes a scene file that calls
  * Library.scene(kind, sceneId); its beats are the scene's @anchors from reel-data.js (each beat's quoted label and
  * spoken time), so re-timing the script (script.mjs time, then scaffold.mjs --sync) updates the scene without
  * rewriting it. A label's fields are split on "|"; a label may start with a lowercase slot name ("stamp: NOT

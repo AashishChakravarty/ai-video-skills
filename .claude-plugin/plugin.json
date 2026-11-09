@@ -1,0 +1,7 @@
+{
+  "name": "ai-video-skills",
+  "description": "Short tech explainer reels (script, local voice-over, HyperFrames build, publish pack) and Instagram carousels, in your brand theme.",
+  "author": { "name": "Aashish Chakravarty" },
+  "repository": "https://github.com/AashishChakravarty/ai-video-skills",
+  "license": "MIT"
+}

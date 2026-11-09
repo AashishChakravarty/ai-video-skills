@@ -89,13 +89,13 @@ uses it as the label. If the user asks for another version after seeing A, build
 ## 2. Per-version workflow
 
 ```bash
-S=~/.claude/skills/ai-video-skills/scripts
+S=$R/scripts   # $R: the plugin folder (skills/reel/SKILL.md)
 node $S/scaffold.mjs a                         # build/a from templates/hyperframes, data from words/anchors
 node $S/starter.mjs a                          # optional: a starter scene per script scene + cues.json, renderable at once
 # edit build/a/assets/direction.js             camera hits/pushes/punches, field events, ticker, CTA flight
 # write build/a/compositions/<scene>.html      copy compositions/scene-template.html, one per script scene
 # add each scene host to build/a/index.html at <!-- @scenes -->
-# optional 3D: cp -r ~/.claude/skills/ai-video-skills/templates/remotion build/a/remotion  (see §7)
+# optional 3D: cp -r $R/templates/remotion build/a/remotion  (see §7)
 # write build/a/cues.json                      SFX on beats (format in scripts/mix.mjs header)
 node $S/mix.mjs a                              # → build/a/assets/mix.wav at −14 LUFS
 node $S/render.mjs a                           # check → render → out/a.mp4 + out/a-contact.png
@@ -185,7 +185,7 @@ together — use hits on slams (amp 6–24 px), a push across the hook, a punch 
 
 Use 3D where an object is the story (a server rack that docks into a badge, processes as spheres, the
 spinning topic logo) — not for text. Setup, clip pattern, `clips.json` and rendering are in
-`~/.claude/skills/ai-video-skills/templates/remotion/README.md`. Key facts: ~1.4 s per frame to render, so trim
+`$R/templates/remotion/README.md`. Key facts: ~1.4 s per frame to render, so trim
 each clip to its on-screen span and render early; `render-clips.mjs` writes straight into
 `build/<v>/assets/clips/`; place each clip in index.html at `@clips` inside a `.camwrap` div with an `id`
 on the `<video>` (the renderer freezes videos without one). Keep the 2D labels in HyperFrames and line

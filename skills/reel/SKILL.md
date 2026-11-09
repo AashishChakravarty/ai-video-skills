@@ -1,5 +1,5 @@
 ---
-name: ai-video-skills
+name: reel
 description: End-to-end short-video studio for tech explainer reels (Instagram Reels, YouTube Shorts, TikTok, LinkedIn, plus a 16:9 YouTube cut) in any language the voice engines speak (tested with English and Hindi/Hinglish). Asks for a topic, researches it, writes the hook and scene script with an ElevenLabs-style tagged audio script, gets approval, makes the voice-over locally (VoiceStudio/OmniVoice, Chatterbox, macOS say) or imports one from ElevenLabs, another platform or the user's recording, aligns words, builds the video with HyperFrames in its Living Diagram style (several directions to compare only when asked; a fast mode with ready-made scenes and one approval for 30–40 minute reels), then produces the publish pack (final video, no-subtitle copy, 16:9 cut, SRT, covers, per-platform captions). Use this whenever the user wants to make, script, voice, build, render or publish a reel, short, explainer video or "video on <topic>", wants to continue or fix an existing reel folder (one with reel.json), or asks for reel captions/hashtags — even if they don't name the skill.
 ---
 
@@ -9,7 +9,8 @@ Turns a topic into a finished, publish-ready reel through gated stages. The user
 voice and the final versions; everything between gates is yours. Each reel lives in its own folder with
 a `reel.json` that records the stage, so work can stop and resume in any session.
 
-Scripts live in `~/.claude/skills/ai-video-skills/scripts` (call it `$S`); every script takes `--reel <folder>`
+The plugin folder is `${CLAUDE_PLUGIN_ROOT}` (call it `$R`): the `reference/`, `templates/`, `examples/` and `themes/`
+paths below are inside it. Scripts live in `$R/scripts` (call it `$S`); every script takes `--reel <folder>`
 or runs from inside the reel folder. The user's settings (handle, channel, language, reels folder, CTA,
 palette, fonts, TTS defaults) live in `~/.config/ai-video-skills/config.json` over the repo's
 `config.default.json`; `node $S/config.mjs` shows them and `node $S/config.mjs set key=value …` changes them.
@@ -68,6 +69,11 @@ asks for fast mode for it.
 6. Publish 9:16 only (no 16:9 cut, no 3D, one version): `captions.md`, `publish.mjs a --cover-at <s>` (its one
    no-subtitle render keeps captions off the cover), and the notes PDF from `templates/notes/notes.html` while
    the render runs, if the CTA promises one.
+
+## Carousel
+
+Carousels (Instagram slides) have their own skill, `/ai-video-skills:carousel`; a reel.json with `kind: "carousel"`
+resumes there.
 
 ## Stage 1–2 — research and script → Gate 1
 

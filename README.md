@@ -55,9 +55,11 @@ Windows is untested.
 
 ```bash
 git clone https://github.com/AashishChakravarty/ai-video-skills.git ~/code/ai-video-skills
-ln -s ~/code/ai-video-skills ~/.claude/skills/ai-video-skills      # Claude Code finds the skill here
 cd ~/code/ai-video-skills && npm install
-npx playwright install chromium                             # headless browser that draws compare.mjs labels
+npx playwright install chromium                             # headless browser for compare.mjs labels and carousels
+claude plugin marketplace add ~/code/ai-video-skills         # the plugin runs from your clone
+claude plugin install ai-video-skills@ai-video-skills        # /ai-video-skills:reel and /ai-video-skills:carousel
+ln -s ~/code/ai-video-skills/shortcut ~/.claude/skills/ai-video-skills   # optional: the /ai-video-skills shortcut
 node scripts/config.mjs set handle=@yourhandle channel="Your Channel" language=en reelsRoot=~/reels
 node scripts/doctor.mjs                                     # checks everything and prints fixes
 ```
@@ -65,6 +67,7 @@ node scripts/doctor.mjs                                     # checks everything 
 Plugins, if missing: `claude plugin marketplace add heygen-com/hyperframes && claude plugin install hyperframes`
 and `claude plugin marketplace add remotion-dev/skills && claude plugin install remotion`.
 
+The plugin is read from your clone, so edits and pulls apply in the next session (or after `/reload-plugins`).
 To update: `cd ~/code/ai-video-skills && git pull && npm install && node scripts/doctor.mjs`. Your settings and
 pronunciation dictionary live outside the repo, so an update never overwrites them.
 
@@ -131,7 +134,9 @@ Starter lists for more languages are welcome as pull requests.
 
 ## Use
 
-In Claude Code, from any folder: `/ai-video-skills`, or just ask — "make a reel about Kafka consumer groups".
+In Claude Code, from any folder: `/ai-video-skills:reel` (or the `/ai-video-skills` shortcut), or just ask — "make
+a reel about Kafka consumer groups". For an Instagram carousel: `/ai-video-skills:carousel <topic>`, or ask for "a
+carousel on GitHub Octoverse".
 Each reel gets its own folder with a `reel.json` that records the stage, so you can stop and resume later.
 See [TESTING.md](TESTING.md) for a guided first run.
 
@@ -152,11 +157,15 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | `srt.mjs`, `cover.mjs`, `publish.mjs` | subtitles, covers and the verified publish pack |
 | `new-reel.mjs --fast` + `starter.mjs` | fast mode: a 5-scene script whose scenes are ready-made library scenes (`assets/library.js`) |
 | `notes.mjs` | prints the reel's notes document (the "comment KEYWORD" freebie) to an A4 PDF |
+| `new-reel.mjs --carousel` + `carousel.mjs` | an Instagram carousel: themed `slides.html` → 1080×1350 slide PNGs and a review sheet, with overflow and font checks |
 
 ## Layout
 
 ```
-SKILL.md                 workflow and gates (what Claude reads first)
+.claude-plugin/          plugin.json and marketplace.json (installs this folder as the ai-video-skills plugin)
+skills/reel/SKILL.md     reel workflow and gates (what Claude reads first): /ai-video-skills:reel
+skills/carousel/SKILL.md carousel workflow: /ai-video-skills:carousel
+shortcut/SKILL.md        the /ai-video-skills shortcut to the reel skill (linked into ~/.claude/skills)
 TESTING.md               setup check, scripts-only pipeline test, full skill test
 config.default.json      default settings (yours live in ~/.config/ai-video-skills/config.json)
 themes/                  starter themes: midnight, terminal, alert, paper
@@ -167,6 +176,7 @@ templates/reel/          research.md, script.md, pronounce.json for a new reel
 templates/hyperframes/   master project: living background, chrome, karaoke captions, shared runtime
 templates/remotion/      transparent 3D clip kit (Logo3D, OrthoStage, render-clips.mjs)
 templates/notes/         notes.html: the readable A4 notes document a "comment KEYWORD" CTA promises
+templates/carousel/      slides.html: Instagram carousel slides (cover, stat, point, cta) styled by the reel's theme
 examples/                short English and Hindi scripts for testing; script.fast.en.md uses every library scene
 assets/                  fonts and GSAP copied into every build
 ```

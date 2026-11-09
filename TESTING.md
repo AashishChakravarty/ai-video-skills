@@ -9,12 +9,12 @@ Three levels, each building on the last. Level 1 takes 2 minutes, level 2 about 
 | 2. Pipeline test | every script works on your machine, from a script to a publish pack | no |
 | 3. Full skill test | Claude runs the whole workflow with the three review gates | yes |
 
-Throughout, `S=~/.claude/skills/ai-video-skills/scripts` (the skill symlink; any clone path works).
+Throughout, `S=~/code/ai-video-skills/scripts` (your clone; any path works).
 
 ## Level 1 — setup check
 
 ```bash
-S=~/.claude/skills/ai-video-skills/scripts
+S=~/code/ai-video-skills/scripts
 node $S/config.mjs          # your settings; * marks values from your config
 node $S/doctor.mjs          # every required row must be ✓
 ```
@@ -33,11 +33,11 @@ config from level 1 if you'd rather not change yours). To test Hindi, set `langu
 `script.hi.md` instead; it has 2 scenes and runs about 10 s, so expect 2 where the checks below say 3.
 
 ```bash
-S=~/.claude/skills/ai-video-skills/scripts
+S=~/code/ai-video-skills/scripts
 node $S/config.mjs set language=en          # or language=hi with script.hi.md
 node $S/new-reel.mjs "Git rebase vs merge" --slug pipeline-test --root /tmp/reel-test --logo git
 cd /tmp/reel-test/pipeline-test
-cp ~/.claude/skills/ai-video-skills/examples/script.en.md script.md
+cp $S/../examples/script.en.md script.md
 node $S/script.mjs vo
 ```
 ✓ `vo.txt: 3 scenes, 37 words ≈ 15s`. The logo line shows the Git brand colour and the accent chosen from it.
@@ -88,7 +88,7 @@ the progress bar, and the pinned FOLLOW footer.
 
 ```bash
 node $S/new-reel.mjs "IRCTC Tatkal" --fast --slug fast-test --root /tmp/reel-test && cd /tmp/reel-test/fast-test
-cp ~/.claude/skills/ai-video-skills/examples/script.fast.en.md script.md
+cp $S/../examples/script.fast.en.md script.md
 node $S/script.mjs vo && node $S/tts.mjs --engine say
 uv run $S/align.py --audio audio/vo.wav --vo vo.txt --out words.json && node $S/script.mjs time
 node $S/scaffold.mjs a && node $S/starter.mjs a && node $S/mix.mjs a && node $S/render.mjs a
@@ -125,6 +125,16 @@ open publish
 ```
 ✓ A table with `pipeline-test-9x16.mp4`, `-9x16-nosubs.mp4` and `-16x9.mp4`, all with the same frame count and
 ≈ −14 LUFS, then `publish pack complete`. `cat reel.json` shows `"stage": "done"`.
+
+**Carousel** (no voice or build)
+
+```bash
+node $S/new-reel.mjs "Carousel test" --carousel --theme paper --root /tmp/reel-test
+node $S/carousel.mjs --reel /tmp/reel-test/carousel-test && open /tmp/reel-test/carousel-test/out/slides-sheet.png
+```
+✓ `wrote 4 slides`, no `!` lines, exit 0. The sheet shows the template's cover, stat, point and cta slides on paper
+with `@yourhandle` and `1 / 4` … `4 / 4` in the footers; each `publish/slide-NN.png` is 1080×1350. Paste a
+paragraph of 300 words into one slide and run it again: a `! slide N: … runs off the slide` line and exit 1.
 
 Clean up: `rm -rf /tmp/reel-test` (and `unset AI_VIDEO_SKILLS_CONFIG` if you used a throwaway config).
 

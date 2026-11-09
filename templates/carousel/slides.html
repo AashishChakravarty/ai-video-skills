@@ -1,0 +1,94 @@
+<!doctype html>
+<!--
+  slides.html: an Instagram carousel (skills/carousel/SKILL.md). Each <section class="slide"> is one 1080×1350 slide,
+  saved by `node $S/carousel.mjs` as publish/slide-NN.png. Replace every CAPS placeholder and keep, copy or delete
+  the example slides: cover first, cta last, 6–8 in all. carousel.mjs writes assets/theme.css (the reel's colours,
+  fonts, background and card style), fills every .handle with the handle and adds each slide's footer (handle +
+  "3 / 7"), so slides never set colours, fonts or footers themselves. Every number on a slide carries a .src line
+  from research.md.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #777; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+  .slide {
+    width: 1080px; height: 1350px; flex-shrink: 0; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; gap: 36px; padding: 120px 96px 170px;
+    font-family: var(--body); font-size: 40px; line-height: 1.45; color: var(--text);
+  }
+  b, strong { color: var(--ink); font-weight: 800; font-family: var(--sans); }
+  em { font-style: normal; color: var(--accent); }
+
+  .kicker { font-family: var(--mono); font-weight: 700; font-size: 28px; letter-spacing: 0.14em; color: var(--accent); }
+  h1 { font-family: var(--sans); font-weight: 800; font-size: 104px; line-height: 1.06; color: var(--ink); }
+  h2 { font-family: var(--sans); font-weight: 800; font-size: 72px; line-height: 1.1; color: var(--ink); }
+  .lede { font-size: 44px; }
+  .num { font-family: var(--mono); font-weight: 700; font-size: 34px; color: var(--surface); background: var(--accent); border-radius: 14px; padding: 6px 18px; align-self: flex-start; }
+  .big { font-family: var(--mono); font-weight: 700; font-size: 220px; line-height: 1; color: var(--accent); letter-spacing: -0.03em; }
+  .src { font-family: var(--mono); font-size: 24px; color: var(--muted); margin-top: auto; }
+  .swipe { font-family: var(--mono); font-weight: 700; font-size: 32px; color: var(--accent); margin-top: 24px; }
+
+  .card { background: var(--surface); border-radius: 28px; padding: 40px 48px; }
+  .rows { display: flex; flex-direction: column; padding: 16px 48px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 32px; padding: 26px 0; border-bottom: 2px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row b { font-size: 44px; }
+  .row span { font-family: var(--mono); font-weight: 700; font-size: 38px; color: var(--accent); white-space: nowrap; }
+
+  .cta { align-items: center; text-align: center; }
+  .cta .card { font-size: 46px; color: var(--ink); }
+  .follow { font-family: var(--mono); font-weight: 700; font-size: 34px; color: var(--accent); }
+
+  footer {
+    position: absolute; left: 96px; right: 96px; bottom: 64px; display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-weight: 700; font-size: 26px; color: var(--muted);
+  }
+  footer .who { display: flex; align-items: center; gap: 16px; }
+  footer img { width: 56px; height: 56px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<!-- cover: the hook in under 10 words, then a reason to swipe -->
+<section class="slide">
+  <div class="kicker">KICKER</div>
+  <h1>HOOK LINE WITH <em>ONE ACCENT WORD</em></h1>
+  <p class="lede">ONE LINE THAT MAKES THEM SWIPE.</p>
+  <div class="swipe">swipe →</div>
+</section>
+
+<!-- stat: one number, what it counts, its source -->
+<section class="slide">
+  <div class="kicker">WHAT THE NUMBER IS ABOUT</div>
+  <div class="big">40%</div>
+  <h2>WHAT IT COUNTS, IN ONE LINE</h2>
+  <p>WHY IT MATTERS TO THE READER, IN ONE OR TWO LINES.</p>
+  <p class="src">Source: SOURCE, MONTH YEAR</p>
+</section>
+
+<!-- point: a numbered takeaway, optionally with a ranked or compared list -->
+<section class="slide">
+  <div class="num">01</div>
+  <h2>TAKEAWAY HEADING</h2>
+  <p>TWO OR THREE SHORT LINES. <b>Bold</b> the words people should remember.</p>
+  <div class="card rows">
+    <div class="row"><b>ITEM</b><span>#1</span></div>
+    <div class="row"><b>ITEM</b><span>#2</span></div>
+    <div class="row"><b>ITEM</b><span>#3</span></div>
+  </div>
+  <p class="src">Source: SOURCE, MONTH YEAR</p>
+</section>
+
+<!-- cta: why to save it, one question for the comments, the follow line -->
+<section class="slide cta">
+  <h2>SAVE LINE</h2>
+  <div class="card">COMMENT QUESTION? 👇</div>
+  <p class="follow">Follow <span class="handle"></span> for more</p>
+</section>
+
+</body>
+</html>

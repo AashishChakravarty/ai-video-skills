@@ -111,7 +111,7 @@ Then look at what you changed: `npx hyperframes snapshot --at <seconds>` (or `--
 ## ai-video-skills
 
 This project was scaffolded by the global `ai-video-skills` skill. Before editing, read
-`~/.claude/skills/ai-video-skills/reference/build.md` (layout, pacing, anchors, camera, clips, review checklist).
+`{{SKILL}}/reference/build.md` (layout, pacing, anchors, camera, clips, review checklist).
 Shared layers (`bg`, `chrome`, `captions`) and `assets/reel-kit.js` are generic: steer them through
 `assets/direction.js`; put the story in `compositions/<scene>.html` copied from `compositions/scene-template.html`.
-Never edit `assets/reel-data.js` by hand — `node ~/.claude/skills/ai-video-skills/scripts/scaffold.mjs <version> --sync` rewrites it.
+Never edit `assets/reel-data.js` by hand — `node {{SKILL}}/scripts/scaffold.mjs <version> --sync` rewrites it.
