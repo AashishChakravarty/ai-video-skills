@@ -158,7 +158,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | `srt.mjs`, `cover.mjs`, `publish.mjs` | subtitles, covers and the verified publish pack |
 | `new-reel.mjs --fast` + `starter.mjs` | fast mode: a 5-scene script whose scenes are ready-made library scenes (`assets/library.js`) |
 | `notes.mjs` | prints the reel's notes document (the "comment KEYWORD" freebie) to an A4 PDF |
-| `new-reel.mjs --carousel` + `carousel.mjs` | an Instagram carousel: themed `slides.html` → 1080×1350 slide PNGs and a review sheet, with overflow and font checks |
+| `new-reel.mjs --carousel` + `carousel.mjs` | an Instagram carousel: themed `slides.html` → 1080×1350 slide PNGs and a review sheet, with overflow and font checks; `--animate` adds 4 s slide MP4s |
 
 ## Layout
 

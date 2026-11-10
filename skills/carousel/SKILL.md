@@ -5,7 +5,7 @@ description: Instagram carousels for tech explainer posts. Researches the topic,
 
 # Carousel (Instagram slides, about 25 minutes)
 
-No voice or video: research, slides, one review. A carousel lives in its own topic folder like a reel, with a
+No voice: research, slides (still or animated), one review. A carousel lives in its own topic folder like a reel, with a
 `reel.json` (`kind: "carousel"`) that records the stage. The plugin folder is `${CLAUDE_PLUGIN_ROOT}` (call it
 `$R`); scripts live in `$R/scripts` (call it `$S`). Brand, look and settings are the reel skill's: the user's
 config (`node $S/config.mjs`) and themes (`node $S/theme.mjs`).
@@ -26,21 +26,26 @@ config (`node $S/config.mjs`) and themes (`node $S/theme.mjs`).
 2. Research only the facts the slides state into research.md, with sources.
 3. Write `slides.html`: 6–8 `<section class="slide">`, the cover first (the hook in under 10 words, then swipe) and
    the cta last (a save line, one comment question, the follow line); one idea per slide in between, about 30
-   words at most, and a `.src` line under every number. On-screen language as for reels. Slides never set colours,
-   fonts or footers: the theme and carousel.mjs do.
+   words at most, and a `.src` line under every number. Write in the configured `onScreenLanguage`, translating a
+   brief or calendar hook written in another language. Slides never set colours, fonts or footers: the theme and
+   carousel.mjs do.
 4. `node $S/carousel.mjs` → `publish/slide-NN.png` (1080×1350) and `out/slides-sheet.png`. Fix every `!` line by
-   cutting words rather than shrinking type, re-run until it prints none, then look at each slide yourself.
+   cutting words rather than shrinking type, re-run until it prints none, then look at each slide yourself. Add
+   `--animate` when the user wants motion: it also writes `publish/slide-NN.mp4` (4 s each; blocks and rows rise
+   in, `.big` numbers count up, then the slide holds). Check a few mid-build frames, not only the sheet.
 5. Write `publish/captions.md` (below).
 6. **The one gate**: show the sheet, the slide paths and the Instagram caption inline; ask for all notes in one
    message, apply them, re-run. Then record `gates.slides` and set `stage` to `done`.
 
 ## captions.md
 
-The slides upload in order (`slide-01.png` …) as one Instagram post. `publish/captions.md` has two `##` sections:
+The slides upload in order (`slide-01.png` …, or the `.mp4`s when animated) as one Instagram post. A video's
+first frame is still empty, so an animated carousel uploads `slide-01.png` as its cover. `publish/captions.md` has two `##` sections:
 
 - **Instagram** (≤ 2,200 chars): the hook line (the cover's idea, not its exact words), one line on what the slides
-  give, a save prompt ("save karo, interview se pehle kaam aayega"), the comment question from the cta slide, the
-  follow line with the handle, 3–5 hashtags; about 300–450 characters. Language and hashtag rules as for reels
+  give, a save prompt ("save this before your next interview"), the comment question from the cta slide, the
+  follow line with the handle, 3–5 hashtags; about 300–450 characters. A carousel has no voice-over, so the caption
+  and alt text use the slides' language, not the reel caption rule; hashtags as for reels
   (`$R/reference/publish.md`, "captions.md").
 - **Alt text**: one numbered line per slide saying what it shows in a sentence, numbers included. Paste each into
   Instagram's alt text (Advanced settings → Accessibility) when posting.

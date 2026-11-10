@@ -136,6 +136,13 @@ node $S/carousel.mjs --reel /tmp/reel-test/carousel-test && open /tmp/reel-test/
 with `@yourhandle` and `1 / 4` … `4 / 4` in the footers; each `publish/slide-NN.png` is 1080×1350. Paste a
 paragraph of 300 words into one slide and run it again: a `! slide N: … runs off the slide` line and exit 1.
 
+```bash
+node $S/carousel.mjs --reel /tmp/reel-test/carousel-test --animate
+ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/reel-test/carousel-test/publish/slide-02.mp4
+```
+✓ `animated: slide-01.mp4 … slide-04.mp4`, each 4.0 s at 1080×1350. Frames from the first second show the blocks
+rising in one after another and the stat slide's `40%` counting up; the PNGs still show the finished slides.
+
 Clean up: `rm -rf /tmp/reel-test` (and `unset AI_VIDEO_SKILLS_CONFIG` if you used a throwaway config).
 
 ## Level 3 — full skill test (with Claude)
