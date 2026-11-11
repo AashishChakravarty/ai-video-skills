@@ -86,13 +86,17 @@ Write for the ear, like someone who knows the subject explaining it to a friend 
   screen (keep the exchange-rate source in research.md).
 - Punctuation carries the rhythm (`।` `,` `?`). Local voices (VoiceStudio, Chatterbox) stop at every `।`, `...` and
   pause tag, so for them write each scene as one or two connected sentences joined with commas, and never use
-  `...`. A pause tag goes only where the user wants a pause, or before a real reveal — about one per scene at
+  `...`. Start a new sentence where the subject changes, though: comma clauses across subjects sound breathless
+  ("…Alice spy है, China इसे झूठ बताता है, इस ख़बर के बाद…" was redone as "…और China इसे झूठ बताता है। इस ख़बर
+  के बाद…"). A pause tag goes only where the user wants a pause, or before a real reveal — about one per scene at
   most, never at a scene's start (scenes already get a gap between them).
 - Turn a section with a one-word question ("Result?", "कैसे?") or an instruction that pulls the viewer in
   ("Trick समझो।").
 - Names go one per sentence and end on a closer: "WordPress। Drupal। Joomla। Wikipedia। सब कुछ।" This roll-call
   only works on ElevenLabs; a local voice makes it stop-start ("Moore Threads, आधी। MetaX, आधी।" was redone), so
   there say the names in one sentence or leave them on screen.
+- Don't wrap a name in commas: a local voice stops before and after it ("gaming company, Seven Road, ने" broke;
+  "gaming company Seven Road ने" was fine).
 - "Not needed" pairs land harder than a list of requirements: "ना login चाहिए। ना आपके app में कोई bug चाहिए।"
 - Exact beats vague: the real version numbers, the real setting, the real tool. Viewers act on specifics.
 
@@ -136,9 +140,13 @@ Rules, and why:
   English words — "seventy percent", "nine point two", "eight point four point twenty-seven" — and counts and
   time spans in Hindi — "दो CVEs", "बीस लाख connections", "दस साल".
   Keep tech terms and acronyms in Latin script in `VO:` (subtitles show them that way); the voice gets
-  Devanagari respellings from `pronounce.mjs`, so they sound Indian, not American, and acronyms are spelled
-  out (php2shell → पी एच पी टू शेल). The starter list already covers English number words
-  (audio.md §Pronunciation).
+  Devanagari respellings from `pronounce.mjs`, so they sound Indian, not American, and acronyms are respelled
+  with the letters joined (php2shell → पीएचपी टू शेल, CEO → सीईओ). The starter list already covers English
+  number words (audio.md §Pronunciation).
+  A local voice stretches the final vowel of a short word right before `,` or `।` ("पहला," → "पहलाआ"; "समझो।"
+  sounds heavy; "भेज दी जाती थीं।" → "दीईई"). Follow an ordinal with a noun so the pause lands on a consonant
+  ("पहला step, … दूसरा step, …"), end on a softer phrase ("तो चलो, पूरा case समझते हैं।", not "तो पूरा case
+  समझो।"), or rephrase away from the long-vowel word ("…chips को चुपके से China भेजा जाता था।").
 - **Other languages**: the default font (Noto Sans Devanagari) covers Latin and Devanagari. For other
   scripts set `fonts.sans` in the config to a TTF that covers them (for example a Noto Sans variant), and
   check VoiceStudio/Chatterbox support the language before scripting.

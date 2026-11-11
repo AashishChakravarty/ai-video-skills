@@ -17,7 +17,7 @@
  * re-taken scene's own under tts.takes). Each take's text is saved next to it (audio/takes/<id>.txt); stitching
  * refuses a take whose text no longer matches vo.txt and its respellings, so an old take is never joined in. --tail
  * pads silence after the last word so the end card can hold. --speed and --seed default to the config's tts.speed and tts.seed. VoiceStudio is the local OmniVoice app (opened if not
- * running); a --voice that is an audio file clones that voice on the fly (VoiceStudio and Chatterbox).
+ * running, and quit at the end of a run that opened it, so align.py gets its memory); a --voice that is an audio file clones that voice on the fly (VoiceStudio and Chatterbox).
  * Stitching cuts a take's leading stall (a faint breath, then a pause before the first word), prints each scene's
  * length and its pauses of 0.3 s or more, and the measured speaking rate against the config's wordsPerSecond.
  */
@@ -52,6 +52,14 @@ const instruct = opt.instruct ?? (opt.engine === 'voicestudio' ? CONFIG.tts.inst
 const isFile = (v) => v && existsSync(v) && /\.(wav|mp3|m4a|flac|aiff?|ogg|webm)$/i.test(v);
 const slug = (s) => String(s ?? 'default').replace(/[^\w.-]+/g, '-').slice(0, 40);
 
+let openedVS = false;
+/** Quits VoiceStudio when this run opened it, so its model's memory is free for align.py. */
+function quitVoiceStudio() {
+  if (openedVS && spawnSync('osascript', ['-e', 'quit app "VoiceStudio"']).status === 0) console.log('quit VoiceStudio (this run opened it), freeing its memory for align.py');
+  openedVS = false;
+}
+process.on('exit', quitVoiceStudio);
+
 async function voicestudioUp() {
   const ok = async () => {
     try {
@@ -62,6 +70,7 @@ async function voicestudioUp() {
   };
   if (await ok()) return;
   console.log('VoiceStudio is not running; opening it…');
+  openedVS = true;
   spawnSync('open', ['-a', 'VoiceStudio']);
   for (let i = 0; i < 90; i++) {
     await new Promise((res) => setTimeout(res, 2000));
@@ -201,7 +210,10 @@ function keepTexts(jobs) {
   for (const job of jobs) if (job.id !== 'sample') writeFileSync(textFile(job.out), job.text);
 }
 
-/** align.py --score for one take: { unclear: [[word, at, match]], mean } — fewer unclear words and a higher mean is cleaner. */
+/**
+ * align.py --score for one take: { dropped, squeezed: [[word, at, span]], stops: [[word, at, gap]], unclear: [[word, at,
+ * match]], mean }. Ranked in that order: fewer dropped, squeezed, stopped and unclear words, then a higher mean, is cleaner.
+ */
 function scoreTake(id, file) {
   const res = spawnSync('uv', ['run', '-q', path.join(SKILL, 'scripts/align.py'), '--audio', file, '--vo', r.file('vo.txt'), '--score', id], { encoding: 'utf8' });
   const line = res.stdout.trim().split('\n').at(-1);
@@ -349,23 +361,28 @@ const picked = {};
 if (opt.seeds) {
   if (!opt.scene?.length) throw new Error('--seeds picks among takes of the scenes named with --scene');
   const seeds = opt.seeds.split(',').map((x) => x.trim()).filter(Boolean);
+  const made = [];
   for (const s of wanted) {
-    const tries = [];
     for (const seed of seeds) {
       opt.seed = seed;
       const out = r.file(`audio/takes/alt/${s.id}-s${seed}.wav`);
       mkdirSync(path.dirname(out), { recursive: true });
       await render([{ id: s.id, text: speakable(s.text, pron), out }]);
-      tries.push({ seed: Number(seed), out, ...scoreTake(s.id, out) });
+      made.push({ s, seed: Number(seed), out });
     }
-    tries.sort((a, b) => a.unclear.length - b.unclear.length || b.mean - a.mean);
-    for (const t of tries) console.log(`  [${s.id}] seed ${t.seed}: match ${t.mean.toFixed(3)}, unclear ${t.unclear.map(([w, at, m]) => `${w}@${at}s (${m})`).join(', ') || 'none'}${t === tries[0] ? '  ← kept' : ''}`);
+  }
+  quitVoiceStudio();
+  for (const s of wanted) {
+    const tries = made.filter((m) => m.s === s).map((m) => ({ seed: m.seed, out: m.out, ...scoreTake(s.id, m.out) }));
+    tries.sort((a, b) => a.dropped - b.dropped || a.squeezed.length - b.squeezed.length || a.stops.length - b.stops.length || a.unclear.length - b.unclear.length || b.mean - a.mean);
+    const words = (list, unit = '') => list.map(([w, at, v]) => `${w}@${at}s (${v}${unit})`).join(', ') || 'none';
+    for (const t of tries) console.log(`  [${s.id}] seed ${t.seed}: match ${t.mean.toFixed(3)}, dropped ${t.dropped}, squeezed ${words(t.squeezed, 's')}, stops ${words(t.stops, 's')}, unclear ${words(t.unclear)}${t === tries[0] ? '  ← kept' : ''}`);
     const take = r.file(`audio/takes/${s.id}.wav`);
     cpSync(tries[0].out, take);
     cpSync(textFile(tries[0].out), textFile(take));
     picked[s.id] = tries[0].seed;
   }
-  console.log('kept the take with the fewest unclear words per scene (others in audio/takes/alt/); a dropped word can still score well, so listen to the kept takes');
+  console.log('kept the take with the fewest dropped, squeezed, stopped and unclear words per scene (others in audio/takes/alt/); a swallowed word mid-scene can still score well, so listen to the kept takes');
 } else {
   await render(wanted.map((s) => ({ id: s.id, text: speakable(s.text, pron), out: r.file(`audio/takes/${s.id}.wav`) })));
 }

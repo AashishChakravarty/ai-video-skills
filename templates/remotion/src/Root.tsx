@@ -1,11 +1,12 @@
 /**
  * Root.tsx: registers one composition per clips.json entry (id = clip id, length = to − from, size and fps
  * from the file), so the same clips render portrait or 16:9 by changing width/height. Every clip is wrapped
- * in FontGate and receives its absolute frame span and the reel palette as props.
+ * in FontGate and receives its absolute frame span and the reel palette as props. It reads clips.resolved.json,
+ * which render-clips.mjs writes with every anchor reference turned into a frame.
  */
 import type { ComponentType } from 'react';
 import { Composition } from 'remotion';
-import spec from '../clips.json';
+import spec from '../clips.resolved.json';
 import { FontGate } from './kit/FontGate';
 import { REGISTRY } from './registry';
 

@@ -9,7 +9,9 @@
  *                            no-subtitle copies so covers never carry a caption
  *   captions.md              per-platform copy written from reference/publish.md (length-checked here)
  *
- *   node publish.mjs <version> [--cover-at 1.5] [--cover16-at 1.5] [--skip-nosubs] [--reel dir]
+ *   node publish.mjs <version> [--cover-at 1.5] [--cover16-at 1.5] [--skip-nosubs] [--low-memory] [--reel dir]
+ *
+ * --low-memory is passed to render.mjs for the no-subtitle renders (which also switch to it on a nearly full disk).
  */
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -19,10 +21,10 @@ import { SKILL, ffmpeg, loadReel, loudness, probeVideo, readJson, writeJson, wri
 
 const { values: opt, positionals } = parseArgs({
   allowPositionals: true,
-  options: { 'cover-at': { type: 'string' }, 'cover16-at': { type: 'string' }, 'skip-nosubs': { type: 'boolean' }, reel: { type: 'string' } },
+  options: { 'cover-at': { type: 'string' }, 'cover16-at': { type: 'string' }, 'skip-nosubs': { type: 'boolean' }, 'low-memory': { type: 'boolean' }, reel: { type: 'string' } },
 });
 const version = positionals[0];
-if (!version) throw new Error('usage: node publish.mjs <version> [--cover-at s] [--cover16-at s] [--skip-nosubs]');
+if (!version) throw new Error('usage: node publish.mjs <version> [--cover-at s] [--cover16-at s] [--skip-nosubs] [--low-memory]');
 const r = loadReel(opt.reel);
 const slug = r.reel.slug, pub = (name) => r.file('publish', name), outFile = (name) => r.file('out', name);
 mkdirSync(r.file('publish'), { recursive: true });
@@ -30,7 +32,7 @@ mkdirSync(r.file('publish'), { recursive: true });
 if (!existsSync(outFile(`${version}.mp4`))) throw new Error(`out/${version}.mp4 missing; run node render.mjs ${version}`);
 for (const v of [version, `${version}-16x9`]) {
   if (opt['skip-nosubs'] || !existsSync(outFile(`${v}.mp4`)) || existsSync(outFile(`${v}-nosubs.mp4`))) continue;
-  const s = spawnSync(process.execPath, [path.join(SKILL, 'scripts/render.mjs'), v, '--nosubs', '--skip-check', '--reel', r.dir], { stdio: 'inherit' });
+  const s = spawnSync(process.execPath, [path.join(SKILL, 'scripts/render.mjs'), v, '--nosubs', '--skip-check', ...(opt['low-memory'] ? ['--low-memory'] : []), '--reel', r.dir], { stdio: 'inherit' });
   if (s.status !== 0) throw new Error(`no-subtitle render of ${v} failed`);
 }
 

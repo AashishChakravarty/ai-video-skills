@@ -154,7 +154,7 @@ The scripts also run on their own (each prints its usage at the top of the file)
 | `align.py` | forced alignment of the approved script to the audio → `words.json` |
 | `scaffold.mjs`, `starter.mjs` | creates/refreshes a version's HyperFrames project (portrait or 16:9); gives it a renderable starter scene per script scene plus a `cues.json` |
 | `mix.mjs` | voice + pad bed or ducked music + SFX cues → −14 LUFS |
-| `render.mjs`, `contact.mjs`, `compare.mjs` | check + render + contact sheet; side-by-side compare of two versions |
+| `render.mjs`, `contact.mjs`, `compare.mjs` | check + render + contact sheet (one Chrome worker with `--low-memory`, or by itself under 6 GB free disk); side-by-side compare of two versions |
 | `srt.mjs`, `cover.mjs`, `publish.mjs` | subtitles, covers and the verified publish pack |
 | `new-reel.mjs --fast` + `starter.mjs` | fast mode: a 5-scene script whose scenes are ready-made library scenes (`assets/library.js`) |
 | `notes.mjs` | prints the reel's notes document (the "comment KEYWORD" freebie) to an A4 PDF |

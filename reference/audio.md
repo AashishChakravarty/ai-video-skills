@@ -66,7 +66,8 @@ Without `--voice` / `--instruct`, tts.mjs uses the config's default voice (`tts.
 `tts.chatterboxRef`, `tts.sayVoice`) and `tts.instruct`.
 
 How it behaves, so you can explain failures:
-- VoiceStudio is opened automatically when its API (127.0.0.1:3900) is down.
+- VoiceStudio is opened automatically when its API (127.0.0.1:3900) is down, and quit when that run ends, so its
+  model does not compete with align.py's Whisper for memory. One you opened yourself stays open.
 - A saved clone made from a long clip (> 20 s) makes VoiceStudio ask for a speech-to-text model. tts.mjs
   then downloads the clip, cuts a clean 6–10 s passage at a pause, transcribes it with the cached Whisper
   model (`tts/prep_ref.py`) and clones from that. The prepared reference is cached in `audio/refs/`.
@@ -110,7 +111,9 @@ node pronounce.mjs list                             # respellings in use and whe
 ```
 
 A hyphenated word with no entry of its own is respelled part by part (twenty-seven → ट्वेंटी सेवन). Words with
-digits (PHP2Shell) need an entry; acronyms are respelled letter by letter (php2shell → पी एच पी टू शेल).
+digits (PHP2Shell) need an entry; acronyms are respelled with the letters joined (php2shell → पीएचपी टू शेल,
+CEO → सीईओ), since a local voice reads "सी ई ओ" as three separate stops. Write glides, not two vowels in a row:
+"हुआंग" (Huang) breaks into हु-आंग, "ह्वांग" is smooth.
 
 `script.mjs vo` prints the same warning, so respell every listed word before showing the script at Gate 1;
 then `audio-script.txt` is ready for any TTS (Indian English: "डाटा" not "डेटा", "रिस्पॉन्स", "कैश"). English
@@ -133,9 +136,11 @@ node tts.mjs --scene pending --seeds 7,42,99      # takes in audio/takes/alt/, e
 uv run align.py --audio audio/takes/alt/pending-s7.wav --vo vo.txt --score pending   # one take's score, as JSON
 ```
 
-The score is the aligner's match for each word: a misread word ("status" said as "stats") or a garbled one scores
-near 0 and the take's mean drops. English words in Latin script score low in every take ("bank" against "बैंक"),
-so scores compare takes of the same scene, never two scenes. A swallowed word can still score well: listen to the
+Takes are ranked by, in order: `dropped` (last words the aligner could not place: the take cut the scene short),
+`squeezed` (words under 70 ms: a clipped name), `stops` (pauses over 0.45 s after a word with no punctuation),
+`unclear` (the aligner's match for a word: a misread word, "status" said as "stats", or a garbled one scores near 0)
+and the mean match. English words in Latin script score low in every take ("bank" against "बैंक"), so scores
+compare takes of the same scene, never two scenes. A word swallowed mid-scene can still score well: listen to the
 kept take. reel.json records the base voice settings under `tts` and each re-taken scene's own (its seed) under
 `tts.takes`.
 

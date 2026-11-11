@@ -8,9 +8,9 @@
     "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "scripts": {
-    "studio": "remotion studio",
+    "studio": "node render-clips.mjs --resolve-only && remotion studio",
     "render": "node render-clips.mjs",
-    "typecheck": "tsc"
+    "typecheck": "node render-clips.mjs --resolve-only && tsc"
   },
   "dependencies": {
     "@react-three/fiber": "9.8.2",

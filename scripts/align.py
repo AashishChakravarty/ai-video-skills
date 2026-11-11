@@ -8,11 +8,12 @@ shape as the Elixir reel's vo.aligned.json: { audio, duration, scenes[{id,start,
 Words keep the script's exact spelling (any script, mixed-language terms included), so subtitles never show
 Whisper's misspellings. Uses faster-whisper large-v3 through stable-ts (downloaded once to the Hugging Face cache).
 When the voice-over is tts.mjs takes joined by digital silence, each scene is aligned on its own (a whole-reel pass
-drifts on long takes). --score rates one take: words the aligner can barely match (a misread "status", a slurred
-"banks") and the mean match, so tts.mjs --seeds can keep the cleanest of several takes.
+drifts on long takes). --score rates one take: the last words it dropped (the aligner could not place them), words
+squeezed under 70 ms (a clipped name), stops mid-sentence, words the aligner can barely match (a misread "status", a
+slurred "banks") and the mean match, so tts.mjs --seeds can keep the cleanest of several takes.
 
   uv run align.py --audio audio/vo.wav --vo vo.txt --out words.json [--lang hi] [--model large-v3] [--compare ref.json]
-  uv run align.py --audio audio/takes/pending.wav --vo vo.txt --score pending      (one take's unclear words, as JSON)
+  uv run align.py --audio audio/takes/pending.wav --vo vo.txt --score pending      (one take's score, as JSON)
 
 --lang defaults to the language in the reel.json next to --out (or vo.txt).
 """
@@ -24,6 +25,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import warnings
 
 import stable_whisper
 
@@ -136,24 +138,46 @@ def spans(tokens):
 
 
 UNCLEAR_P = 0.2
+SQUEEZED_SPAN = 0.07
+STOP_GAP = 0.45
+
+
+def align_part(model, audio, text, lang):
+    """stable-ts alignment of one passage, and how many of its last words it could not place (stable-ts only warns)."""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        res = model.align(audio, text, language=lang, original_split=False)
+    dropped = 0
+    for w in caught:
+        m = re.search(r"Failed to align the last (\d+)/", str(w.message))
+        if m:
+            dropped = int(m.group(1))
+        else:
+            print(f"{w.category.__name__}: {w.message}", file=sys.stderr)
+    return res, dropped
 
 
 def align_chars(model, audio, groups, lang, total):
-    """(start, end, probability) for every non-space character of the narration, from stable-ts. `groups` holds each
-    scene's tokens; when the voice-over is takes joined by digital silence (tts.mjs), each scene is aligned on its own,
-    so one hard passage can't pull the rest of the reel out of sync (whole-reel alignment drifts)."""
+    """(start, end, probability) for every non-space character of the narration, from stable-ts, and how many of each
+    scene's last words the aligner dropped. `groups` holds each scene's tokens; when the voice-over is takes joined by
+    digital silence (tts.mjs), each scene is aligned on its own, so one hard passage can't pull the rest of the reel out
+    of sync (whole-reel alignment drifts)."""
     gaps = [g for g in silences(audio, -90.0, 0.25, total) if g[0] > 0.05 and g[1] < total - 0.05]
-    parts = []
+    parts, dropped = [], [0] * len(groups)
     if len(groups) > 1 and len(gaps) == len(groups) - 1:
         bounds = zip([0.0] + [g[1] for g in gaps], [g[0] for g in gaps] + [total])
         with tempfile.TemporaryDirectory() as tmp:
             for k, (toks, (a, b)) in enumerate(zip(groups, bounds)):
                 clip = os.path.join(tmp, f"{k}.wav")
                 subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{a:.3f}", "-to", f"{b:.3f}", "-i", audio, "-ac", "1", "-ar", "16000", clip], check=True)
-                parts.append((model.align(clip, " ".join(toks), language=lang, original_split=False), a))
+                res, dropped[k] = align_part(model, clip, " ".join(toks), lang)
+                parts.append((res, a))
     else:
-        parts.append((model.align(audio, " ".join(t for toks in groups for t in toks), language=lang, original_split=False), 0.0))
-    return [(w.start + off, w.end + off, w.probability) for res, off in parts for seg in res.segments for w in seg.words for ch in w.word.strip() if not ch.isspace()]
+        res, n = align_part(model, audio, " ".join(t for toks in groups for t in toks), lang)
+        parts.append((res, 0.0))
+        for k in reversed(range(len(groups))):
+            dropped[k], n = min(n, len(groups[k])), max(0, n - len(groups[k]))
+    return [(w.start + off, w.end + off, w.probability) for res, off in parts for seg in res.segments for w in seg.words for ch in w.word.strip() if not ch.isspace()], dropped
 
 
 def token_times(tokens, flat):
@@ -174,7 +198,7 @@ def main() -> int:
     ap.add_argument("--compare")
     ap.add_argument("--silence-db", type=float, default=-38.0)
     ap.add_argument("--no-snap", action="store_true")
-    ap.add_argument("--score", metavar="SCENE", help="score one take (--audio) against that scene of vo.txt: prints JSON with its unclear words; writes nothing")
+    ap.add_argument("--score", metavar="SCENE", help="score one take (--audio) against that scene of vo.txt: prints JSON with its dropped, squeezed, stopped and unclear words; writes nothing")
     args = ap.parse_args()
     if not args.out and not args.score:
         ap.error("--out is required (or --score SCENE)")
@@ -194,11 +218,31 @@ def main() -> int:
 
     model = stable_whisper.load_faster_whisper(args.model, device="cpu", compute_type="int8")
     total = duration(args.audio)
-    times = token_times(tokens, align_chars(model, args.audio, groups, args.lang, total))
-    if args.score:
-        unclear = [(tok, round(t[0], 2), round(t[2], 2)) for tok, t in zip(tokens, times) if t[2] < UNCLEAR_P or t[3] < 0.06]
-        print(json.dumps({"scene": args.score, "unclear": unclear, "mean": round(statistics.mean(t[2] for t in times), 3)}, ensure_ascii=False))
+    flat, dropped = align_chars(model, args.audio, groups, args.lang, total)
+    lost = [f"scene [{s['id']}]: the aligner could not place the last {n} of {len(g)} words (a take dropped them); re-take that scene"
+            for s, g, n in zip(scenes, groups, dropped) if n]
+    try:
+        times = token_times(tokens, flat)
+    except SystemExit:
+        if not lost:
+            raise
+        if not args.score:
+            raise SystemExit("\n".join(lost))
+        print(json.dumps({"scene": args.score, "dropped": sum(dropped), "squeezed": [], "stops": [], "unclear": [], "mean": 0.0}, ensure_ascii=False))
         return 0
+    if args.score:
+        unclear = [(tok, round(t[0], 2), round(t[2], 2)) for tok, t in zip(tokens, times) if t[2] < UNCLEAR_P]
+        short = [t[3] < SQUEEZED_SPAN for t in times]
+        # A lone short word is usually an alignment artefact at a sentence start; a run of them is a swallowed phrase.
+        squeezed = [(tok, round(t[0], 2), round(t[3], 2)) for k, (tok, t) in enumerate(zip(tokens, times))
+                    if short[k] and ((k > 0 and short[k - 1]) or (k + 1 < len(short) and short[k + 1]))]
+        stops = [(tok, round(t[1], 2), round(nxt[0] - t[1], 2)) for tok, t, nxt in zip(tokens, times, times[1:])
+                 if nxt[0] - t[1] > STOP_GAP and not SENTENCE_END.search(tok)]
+        print(json.dumps({"scene": args.score, "dropped": sum(dropped), "squeezed": squeezed, "stops": stops, "unclear": unclear,
+                          "mean": round(statistics.mean(t[2] for t in times), 3)}, ensure_ascii=False))
+        return 0
+    for line in lost:
+        print(f"warning: {line}")
 
     words, prev_end = [], 0.0
     for tok, (t0, t1, _, _) in zip(tokens, times):

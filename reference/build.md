@@ -101,6 +101,9 @@ node $S/mix.mjs a                              # → build/a/assets/mix.wav at �
 node $S/render.mjs a                           # check → render → out/a.mp4 + out/a-contact.png
 ```
 
+Under 6 GB free disk render.mjs warns and renders with one Chrome worker (macOS swap shares the disk, so a full
+render can die with ENOSPC); `--low-memory` forces that mode (publish.mjs passes it on).
+
 Shared layers (`bg`, `chrome`, `captions`, `assets/reel-kit.js`) are generic — steer them through
 direction.js rather than editing them, so fixes to the template keep applying. After a voice re-take and
 re-align, `node $S/scaffold.mjs a --sync` refreshes the data and durations without touching scenes.
@@ -191,7 +194,10 @@ each clip to its on-screen span and render early; `render-clips.mjs` writes stra
 on the `<video>` (the renderer freezes videos without one). Keep the 2D labels in HyperFrames and line
 them up with the clip's geometry (both use canvas pixels). Take every position from `props` (lanes, rows,
 spawn heights, the x of the hero lane), never a literal pixel in the component, so the 16:9 cut only edits
-`clips.json`. If port 3000 is taken (Docker), pass `--port 3917` to `render-clips.mjs`.
+`clips.json`. Time clips from the voice, not literal frames: any frame in `from`, `to` or props may be
+`{ "anchor": ["route", "पहला"], "offset": -6 }`, `{ "word": "company", "after": ["route", "पहला"] }` or
+`{ "scene": "clues", "edge": "start" }`, so after a voice re-take you just re-run `render-clips.mjs`
+(`--write-html` also updates each `<video>`'s data-start/data-duration). It picks a free port by itself.
 
 ## 8. Motion lessons from earlier reels
 

@@ -160,6 +160,8 @@ publish.md "Notes PDF").
 - Gates are real: don't start the voice before the script is approved, the build before the audio is
   approved, or the publish pack before the version is approved. Batch your questions at each gate into one
   message with a recommended default.
+- Even when the user says they'll review everything at the end, stop for audio approval before building: an
+  audio change after the build re-times every beat and forces 3D clips to re-render.
 - Show evidence, not claims: when a stage finishes, quote the script's own output (durations, LUFS,
   frame counts, check results) and the paths the user can open.
 - Keep `reel.json` current (`stage`, `gates`, `versions`) — it is how the next session resumes.
