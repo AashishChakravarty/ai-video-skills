@@ -2,19 +2,45 @@
 
 The script decides whether the reel works; the build only amplifies it. Spend the effort here.
 
+## What travels
+
+Measured on @binary_programmer's first nine posts and a benchmark creator (deven.explains, Nov 2026): the angle
+decides reach, not the production.
+
+- **A crime, scam or mistake told as a story beats a system explained.** Binance heist: ours 1,443 views, his
+  18.7k likes. UPI system design: ours 227 views, his 234 likes. His UPI hook (a ₹20 QR at a chai stall) was
+  good and still flopped, because nothing was at stake for the viewer.
+- **The twist is the way in that happens in the viewer's own life.** His Binance reel: "लेकिन इस चोरी की
+  शुरुआत किसी vault से नहीं हुई, एक job interview से हुई।" Every developer has had a recruiter's coding test.
+  Ours had the same fact (a DevOps engineer's hacked laptop) in scene 5, after EIP-7702 and nonces.
+- **The last line tells viewers what to do next time it happens to them**, so they forward it: "अगली बार जब
+  कोई recruiter आपको एक छोटा सा coding test भेजे, तो सोच लीजिएगा, वो code चलेगा कहाँ।" Ours ended on "हर
+  अनजान delegation पर alert रखो" (no viewer touches one); his flop ended on a trivia number.
+- **A story holds people for minutes; an explainer loses them after one.** His heist ran 3 min 50 s. Our 32 s
+  Diwali ladi reel (1,194 views) came close to our 111 s Nvidia reel (1,637).
+- **The first frame shows real people or a real place.** The Nvidia reel opened on the photo of Jensen and
+  Alice and got our most views; the reels that opened on a logo, a "?" or a clock stalled under 400.
+
 ## Research → `research.md`
 
 1. Search the web for the topic (WebSearch; several queries in one turn): official docs, the original
    announcement or paper, a credible case study, and one "common misconception" source.
 2. Fill the facts table. **Every number on screen needs a source URL** — viewers screenshot numbers and
    comment when they are wrong. Prefer primary sources; mark anything you could only find second-hand.
-3. Note what viewers usually get wrong: the best hooks correct a belief.
+3. Note what viewers usually get wrong: the best hooks correct a belief. Find the human moment: who was
+   fooled or lost money, and the way in that happens in the viewer's own life (a recruiter's coding test, a QR
+   at a chai stall, Tatkal at 10:00). That is the twist. A topic with no such moment needs what the viewer
+   stands to lose, or it stays a short explainer.
 4. For news (a security bug, a release, an outage), collect what a viewer acts on, not only what happened: the
    name and identifiers (CVE IDs), severity and who rated it, affected and fixed versions per branch, the
    well-known products it touches, how it works as 3–5 plain cause → effect steps, what it needs (a login? a
    setting?), the impact, the backstory that makes it surprising (how long it hid, how it was found), and the
    fix: versions, stopgaps and their limits, a tool to check.
 5. Write 3 hook candidates. Hooks that work for developer reels:
+   - **Story cold open** (crime, scam, scandal): date, time and place like a documentary, the scale, then the
+     twist: "29 अक्टूबर, शाम के चार बजकर पाँच मिनट… सिर्फ़ बीस मिनट में पचास हज़ार करोड़ ग़ायब… लेकिन इस
+     चोरी की शुरुआत किसी vault से नहीं हुई, एक job interview से हुई।" Over a cinematic opening shot the twist
+     can land as late as ~25 s.
    - **Stat question**: "WhatsApp ran 2 million connections on one server. How?" (number + mystery)
    - **Contradiction**: "Threads are slow. Processes are faster." (violates an expectation)
    - **Stakes**: "This one bug could take down 70% of the internet."
@@ -23,30 +49,44 @@ The script decides whether the reel works; the build only amplifies it. Spend th
      the viewer about their own money, code or job)
 
    Talk to the viewer; don't report to them. A hook that relays news ("…और सत्रह दिन बाद ख़बर आई कि…") sounds
-   like a bulletin and viewers asked for it to be redone; the news belongs in scene 2, after the viewer cares.
+   like a bulletin and viewers asked for it to be redone: tell it as a story cold open, or put the news in
+   scene 2, after the viewer cares. Curiosity alone is not enough; the hook needs the viewer's stake (their
+   money, job, code, ticket). Never open on "क्या आप जानते हैं?".
 
 ## Script → `script.md`
 
 Use the template new-reel.mjs created. Its header carries the voice-over language and style from the config
-(`node config.mjs`). Structure for a 45–60 s reel:
+(`node config.mjs`). Structure for an explainer, under 40 s (one with nothing at stake for the viewer does not
+hold longer):
 
 | Scene | Job | Length |
 |---|---|---|
-| S1 hook | stop the scroll in the first 3 s, pose the question | 8–12 s |
-| S2–S4 | one idea per scene, each answering the last scene's question | 8–12 s each |
-| S5 CTA | recap in one line (the lesson), then the follow line | 6–10 s |
+| S1 hook | the surprise or the number in the first line, the viewer's stake right after | 3–6 s |
+| S2–S4 | one idea per scene, each answering the last scene's question | 6–10 s each |
+| S5 CTA | what the viewer does next time, then the follow line | 4–6 s |
 
-For news the viewer cannot act on (markets, policy, a company's crash or funding round), keep the explainer
-structure and teach the concept before the news — the numbers mean nothing until the idea is clear:
+For a crime, scam, heist or scandal, use the story arc. It can run 60–240 s because the story holds people:
+
+| Scene | Job | Example (Binance heist, deven.explains) |
+|---|---|---|
+| cold open | date, time, place, the scale made physical | "29 अक्टूबर 2026, शाम के चार बजकर पाँच मिनट…" over the loot as 100+ km of ₹500 notes |
+| twist | the way in, from the viewer's own life | "…इस चोरी की शुरुआत किसी vault से नहीं हुई, एक job interview से हुई।" |
+| how | the steps as events, one actor each | fake recruiter → assignment.zip → npm install → deploy token → wallets drained |
+| who | the villain and the evidence, attributed | "TRM और Chainalysis के मुताबिक़, North Korea का TraderTraitor group" |
+| close | what the viewer does next time, then the follow line | "अगली बार जब कोई recruiter…, तो सोच लीजिएगा, वो code चलेगा कहाँ।" |
+
+For news the viewer cannot act on (markets, policy, a company's crash or funding round), lead with the event and
+the viewer's stake, and give the concept one sentence right after the number it explains. A separate concept
+scene before the news lost viewers (China AI bubble, 311 views):
 
 | Scene | Job | Example (China AI bubble, Hindi) |
 |---|---|---|
 | hook | the viewer's stake, then the event in one line | "अगर तुम भी AI shares में पैसा लगा रहे हो, तो रुको, पहले देखो China में क्या हुआ…" |
-| concept | the idea as an everyday picture, before any number | "जब दस लाख का plot लोग एक करोड़ में ख़रीदने लगें, ये सोच के कि कल अच्छा profit होगा…" |
 | what | what happened, with the 1–2 numbers that matter | "…चार महीने में forty percent गिर गए, यानी चालीस लाख करोड़ रुपये से भी ज़्यादा डूब गए।" |
+| concept | the idea as an everyday picture, in one sentence | "जब दस लाख का plot लोग एक करोड़ में ख़रीदने लगें, ये सोच के कि कल अच्छा profit होगा…" |
 | why | the causes in plain words, one sentence | "shares की कीमतें कमाई से बहुत आगे निकल गई थीं, ऊपर से…" |
 | twist | what makes it surprising | "मज़े की बात, सरकार ख़ुद पैसा लगाना बंद नहीं कर रही…" |
-| cta | the lesson in one line, then the follow line | "AI की technology असली है, पर हर AI share की कीमत नहीं।" |
+| cta | what the viewer does with their own money, then the follow line | "AI की technology असली है, पर हर AI share की कीमत नहीं।" |
 
 For news the viewer acts on (security bugs, releases, outages) use the alert arc instead. It runs 60–90 s because every scene
 carries a fact the viewer acts on:
@@ -79,8 +119,8 @@ Write for the ear, like someone who knows the subject explaining it to a friend 
   ("दो CVEs। दोनों nine point two।") sounds like a news bulletin, not an explanation.
 - Explain each mechanism with an everyday picture first, then name the term: a hot wallet is the exchange's
   cash counter, the cold wallet its तिजोरी, an EIP-7702 delegation a power of attorney.
-- Explain before you report: a viewer who has not understood the idea cannot follow the numbers. Give the
-  concept its own scene before the news.
+- Explain where it is needed: give a term its everyday picture in the sentence where it first matters. Don't
+  stop the story for a concept scene before the news.
 - Plain words in the voice, jargon on screen: say "बड़ी AI और chip companies", show "STAR50"; say "पाबंदियाँ",
   show "US CHIP CURBS". Big money the way the audience counts it: "चालीस लाख करोड़ रुपये" next to "$480B" on
   screen (keep the exchange-rate source in research.md).
@@ -115,6 +155,8 @@ Rules, and why:
 - **Beats** are lines starting with `- @word:` — the on-screen event that fires as that word is spoken.
   `@word` matches the next occurrence in that scene (punctuation/case ignored); `@{two words}` matches a
   phrase. Write `\@name` for a literal @ in on-screen text (the reel's own handle is exempt).
+- **The hook's first beat** is a real photo or face, or a cinematic establishing shot (a place at a time),
+  never a logo, an icon or a "?" alone: the first frame decides the swipe (§What travels).
 - **A new visual event at least every 2 s; nothing static longer than 0.7 s except the final CTA.** Reels
   are judged on retention; a static frame is where people swipe. Add a `Filler:` line per scene with
   secondary motion (counters rolling, dots drifting, a camera drift) for the gaps between beats.
@@ -125,9 +167,10 @@ Rules, and why:
   the reel feel like one continuous shot.
 - **Palette**: bg, accent (from the topic logo), success green, text, white. No red unless you add it to
   the palette on purpose — strikes and crash flashes read fine in white.
-- **CTA scene** ends on the spoken follow line from the config (`cta.spoken`). Before it, an explainer gives
-  the lesson in one line (tease a next video only when the user has one planned); a news reel gives the action
-  with urgency ("आज ही।").
+- **CTA scene** ends on the spoken follow line from the config (`cta.spoken`). Before it, one line tells the
+  viewer what to do the next time this happens to them, the line they forward to a friend; not a recap of the
+  mechanism, not trivia. A news reel the viewer acts on gives the action with urgency ("आज ही।"). Tease a next
+  video only when the user has one planned.
 
 ### Language notes
 

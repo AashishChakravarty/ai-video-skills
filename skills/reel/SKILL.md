@@ -35,8 +35,8 @@ creates one, `theme.mjs default <name>` makes it the default.
 2. If the current folder (or a folder the user names) has `reel.json` and its `stage` is not `done`, read it
    and resume at that stage; say where you are resuming in one line. If the user names a new topic, or the
    reel is `done`, start a new reel instead (step 3) — every topic gets its own folder.
-3. Otherwise ask for the topic — just the topic; offer, don't require, an angle, length (default 45–60 s)
-   and language (default from the config).
+3. Otherwise ask for the topic — just the topic; offer, don't require, an angle, length (default under 40 s for an
+   explainer; a story arc runs as long as the story holds) and language (default from the config).
    Then: `node $S/new-reel.mjs "<topic>" --logo <simple-icons slug>` (find slugs with
    `node $S/logo.mjs --search <text>`), adding `--theme <name>` when the user asks for a look (`alert` suits
    security news). It creates `<reelsRoot>/<slug>/` with templates and the theme's brand and look, and picks a
@@ -78,8 +78,10 @@ resumes there.
 ## Stage 1–2 — research and script → Gate 1
 
 Read `reference/script.md`, then research (with sources) into `research.md` and write `script.md` in its
-voice (§Voice and rhythm): a hook that talks to the viewer, the concept as an everyday picture before any news or
-number, connected sentences a local voice reads without stopping; the alert arc only for news the viewer acts on. When the user hands you their own draft, keep its words
+voice (§What travels, §Voice and rhythm): the human moment as the hook (the way in that happens in the viewer's
+own life), a first frame of real people or a real place, the concept as an everyday picture where it is needed,
+connected sentences a local voice reads without stopping, and a last line that tells viewers what to do next time;
+the story arc for a crime, scam or scandal, the alert arc only for news the viewer acts on. When the user hands you their own draft, keep its words
 and rhythm and change only the facts, the writing system (Devanagari for Hindi) and the format. When the
 config's `audioTags` is true, pause tags stay rare and an emotion tag marks each change of feeling (script.md §Audio tags).
 
