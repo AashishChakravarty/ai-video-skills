@@ -12,7 +12,8 @@ no-subtitle copies (a cover never shows a caption), length-checks `captions.md`,
 a table plus a TO FIX list. Run it again after fixing anything. A reel published 9:16 only (fast mode, or
 `"landscape": false` in reel.json when the user skips the 16:9 cut) is not asked for one.
 Pick `--cover-at` from a moment with the hook's biggest text on screen (check the contact sheet); it is
-the cover on profile grids and the Shorts shelf.
+the cover on profile grids and the Shorts shelf. Pick a time after counters and entrances have settled, and
+open `cover-9x16.png` to confirm: a frame mid-roll shows a wrong number.
 
 ## Which file goes where
 

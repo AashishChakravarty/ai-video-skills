@@ -65,8 +65,9 @@ export function staleAnchors(dir, anchors) {
   const check = (file, refs) => refs.forEach(([scene, token, n = 0]) => has(scene, token, n) || missing.push(`${file}: ${scene}/${token}${n ? `#${n}` : ''}`));
   const scan = (file, text) => {
     const refs = [...text.matchAll(/\b(?:A|anchor)\(\s*(["'])([\w-]+)\1\s*,\s*(["'])(.+?)\3\s*(?:,\s*(\d+))?\s*\)/g)].map((m) => [m[2], m[4], Number(m[5] ?? 0)]);
-    for (const h of text.matchAll(/const (\w+) = \((\w+)(?:,\s*(\w+)(?:\s*=\s*\d+)?)?\) =>[^\n]*?anchor\(\s*(["'])([\w-]+)\4\s*,\s*\2\s*(?:,\s*\3)?\s*\)/g)) {
-      for (const c of text.matchAll(new RegExp(`\\b${h[1]}\\(\\s*(["'])(.+?)\\1\\s*(?:,\\s*(\\d+))?\\s*\\)`, 'g'))) refs.push([h[5], c[2], Number(c[3] ?? 0)]);
+    for (const h of text.matchAll(/const (\w+) = \((\w+)(?:,\s*(\w+)(?:\s*=\s*\d+)?)?\) =>[^\n]*?anchor\(\s*(["'])([\w-]+)\4\s*,\s*\2\s*(,\s*\3)?\s*\)/g)) {
+      // A helper's second argument is an occurrence only when it is passed on to anchor(); otherwise it is the helper's own (an offset).
+      for (const c of text.matchAll(new RegExp(`\\b${h[1]}\\(\\s*(["'])(.+?)\\1\\s*(?:,\\s*(\\d+))?\\s*\\)`, 'g'))) refs.push([h[5], c[2], Number((h[3] && h[6] && c[3]) || 0)]);
     }
     check(file, refs);
   };

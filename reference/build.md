@@ -166,7 +166,8 @@ that uses them (the linter checks per file). Contrast ≥ 4.5:1 — the accent f
   scene-template.html; fade out against `END`, never against the scene's last word. The host in index.html spans
   START to END: `scaffold.mjs --sync` sets it after every re-take or re-align.
 - A one-scene helper (`const at = (tok) => F(K.anchor("hook", tok))`, then `at("कट")`) is fine: the stale-anchor
-  check (script.mjs time, scaffold --sync, render.mjs) reads it like `K.anchor` and `A(...)`.
+  check (script.mjs time, scaffold --sync, render.mjs) reads it like `K.anchor` and `A(...)`. A second argument
+  counts as the n-th occurrence only when the helper passes it on to `K.anchor`.
 - Scene-change whooshes in cues.json follow the scene: `{ "scene": "stack", "offset": -0.15, "sfx": "whoosh" }`.
 - Total frames = `ceil(duration × 30)` (scaffold writes it; render.mjs warns if the output differs).
 
@@ -197,7 +198,9 @@ spawn heights, the x of the hero lane), never a literal pixel in the component, 
 `clips.json`. Time clips from the voice, not literal frames: any frame in `from`, `to` or props may be
 `{ "anchor": ["route", "पहला"], "offset": -6 }`, `{ "word": "company", "after": ["route", "पहला"] }` or
 `{ "scene": "clues", "edge": "start" }`, so after a voice re-take you just re-run `render-clips.mjs`
-(`--write-html` also updates each `<video>`'s data-start/data-duration). It picks a free port by itself.
+(`--write-html` also updates each `<video>`'s data-start/data-duration). It picks a free port by itself. To look at one frame before the full render, run
+`node render-clips.mjs --resolve-only`, then `npx remotion still src/index.ts <clip id> /tmp/<id>.png --frame=<n> --port=3917`
+(`n` counts from the clip's `from`; without `--port`, Remotion's default 3000 is often taken).
 
 ## 8. Motion lessons from earlier reels
 
@@ -231,7 +234,9 @@ spawn heights, the x of the hero lane), never a literal pixel in the component, 
 
 1. `render.mjs` printed check passed, frames = `reel.json audio.frames`, audio ≈ −14 LUFS.
 2. Read `out/<v>-contact.png`: header, footer and a moving background in every tile; no tile without a
-   new element for more than 2 tiles in a row; scene text never touches the captions band or header.
+   new element for more than 2 tiles in a row; scene text never touches the captions band or header. A tile
+   with only a title and one object, or a bare third of the stage, gets a supporting element (a stat, a label
+   on the object, a second object that the voice names).
 3. Snapshot the hand-offs (`npx hyperframes snapshot --at <t1>,<t2> --output ../../out/preview/<name>` in build/<v>)
    and look at them. Frames go to `out/preview/` so the user can open them; the default `.hyperframes/` is hidden.
 4. Hook: something large and legible at frame 0 — the first tile of the contact sheet must not be empty.

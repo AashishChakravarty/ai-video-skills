@@ -30,7 +30,21 @@
   .num { font-family: var(--mono); font-weight: 700; font-size: 34px; color: var(--surface); background: var(--accent); border-radius: 14px; padding: 6px 18px; align-self: flex-start; }
   .big { font-family: var(--mono); font-weight: 700; font-size: 220px; line-height: 1; color: var(--accent); letter-spacing: -0.03em; }
   .src { font-family: var(--mono); font-size: 24px; color: var(--muted); margin-top: 12px; }
-  .swipe { font-family: var(--mono); font-weight: 700; font-size: 32px; color: var(--accent); margin-top: 24px; }
+  .swipe { font-family: var(--mono); font-weight: 700; font-size: 32px; color: var(--accent); margin-top: 24px; display: flex; align-items: center; }
+
+  .slide { --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20V4M5 11l7-7 7 7'/%3E%3C/svg%3E");
+    --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5'/%3E%3C/svg%3E"); }
+  .slide .up { color: var(--success); }
+  .slide .down { color: var(--danger); }
+  .up::before, .down::before, .swipe::after, .checks .row > b::before {
+    content: ""; display: inline-block; width: 0.8em; height: 0.8em; flex-shrink: 0; background: currentColor;
+    mask: var(--arrow) center / contain no-repeat; vertical-align: -0.1em; margin-right: 0.2em;
+  }
+  .down::before { rotate: 180deg; }
+  .big.up::before, .big.down::before { width: 0.5em; height: 0.5em; margin-right: 0.04em; vertical-align: 0.06em; }
+  .swipe::after { rotate: 90deg; margin: 0 0 0 0.35em; }
+  .checks .row > b::before { mask-image: var(--tick); color: var(--success); }
+  .quote::before { content: "\201C"; display: block; height: 0.5em; font-family: var(--sans); font-weight: 800; font-size: 140px; line-height: 1; color: var(--accent); }
 
   .card { background: var(--surface); border-radius: 28px; padding: 40px 48px; }
   .rows { display: flex; flex-direction: column; padding: 16px 48px; }
@@ -58,7 +72,7 @@
   <div class="kicker">KICKER</div>
   <h1>HOOK LINE WITH <em>ONE ACCENT WORD</em></h1>
   <p class="lede">ONE LINE THAT MAKES THEM SWIPE.</p>
-  <div class="swipe">swipe →</div>
+  <div class="swipe">swipe</div>
 </section>
 
 <!-- stat: one number, what it counts, its source -->

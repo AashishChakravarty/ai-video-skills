@@ -28,19 +28,22 @@ config (`node $S/config.mjs`) and themes (`node $S/theme.mjs`).
    the cta last (a save line, one comment question, the follow line); one idea per slide in between, about 30
    words at most, and a `.src` line under every number. Write in the configured `onScreenLanguage`, translating a
    brief or calendar hook written in another language. Slides never set colours, fonts or footers: the theme and
-   carousel.mjs do.
+   carousel.mjs do. Give the eye something besides text: `.up` / `.down` on a `.big` number or a row value adds a
+   green or red arrow (drop the +/− sign), `.checks` on a `.rows` card ticks each row, `.quote` on a `.card` adds a
+   quote mark, and the cover's `.swipe` draws its own arrow.
 4. `node $S/carousel.mjs` → `publish/slide-NN.png` (1080×1350) and `out/slides-sheet.png`. Fix every `!` line by
    cutting words rather than shrinking type, re-run until it prints none, then look at each slide yourself. Add
-   `--animate` when the user wants motion: it also writes `publish/slide-NN.mp4` (4 s each; blocks and rows rise
-   in, `.big` numbers count up, then the slide holds). Check a few mid-build frames, not only the sheet.
+   `--animate` when the user wants motion: it also writes `publish/slide-NN.mp4` (4 s each; after the cover, blocks
+   and rows rise in, `.big` numbers count up, then the slide holds; the cover is finished from frame 0 and only its
+   swipe arrow nudges). Check a few mid-build frames and the cover's frame 0, not only the sheet.
 5. Write `publish/captions.md` (below).
 6. **The one gate**: show the sheet, the slide paths and the Instagram caption inline; ask for all notes in one
    message, apply them, re-run. Then record `gates.slides` and set `stage` to `done`.
 
 ## captions.md
 
-The slides upload in order (`slide-01.png` …, or the `.mp4`s when animated) as one Instagram post. A video's
-first frame is still empty, so an animated carousel uploads `slide-01.png` as its cover. `publish/captions.md` has two `##` sections:
+The slides upload in order (`slide-01.png` …, or the `.mp4`s when animated) as one Instagram post. Instagram's
+grid thumbnail is the first video's first frame, which is why the cover never builds in. `publish/captions.md` has two `##` sections:
 
 - **Instagram** (≤ 2,200 chars): the hook line (the cover's idea, not its exact words), one line on what the slides
   give, a save prompt ("save this before your next interview"), the comment question from the cta slide, the
